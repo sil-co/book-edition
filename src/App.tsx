@@ -1,35 +1,36 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 
-function App() {
-  const [count, setCount] = useState(0)
+import BookList from './components/BookList/BookList';
+import CreateBook from './components/CreateBook/CreateBook';
+import EditBook from './components/EditBook/EditBook';
 
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+const App = () => {
+    return (
+        <div>
+            <Router>
+                <nav className="bg-gray-800 p-4 text-white">
+                    <div className="container mx-auto flex items-center">
+                        <ul className="flex space-x-4">
+                            <li>
+                                <Link to="/">Home</Link>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+
+                <div className="container mx-auto p-4">
+                    <Routes>
+                        <Route path="/" element={<BookList />} />
+                        <Route path="/edit/:id" element={<EditBook />} />
+                        <Route path="/create" element={<CreateBook />} />
+                    </Routes>
+                </div>
+            </Router>
+
+            {/* <BookList /> */}
+        </div>
+    );
 }
+
 
 export default App
