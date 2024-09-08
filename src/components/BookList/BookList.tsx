@@ -1,122 +1,61 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { Link } from "react-router-dom";
 import { FiExternalLink } from 'react-icons/fi'; // 別タブアイコンをimport
 
 import { useState, useEffect } from 'react';
-
+import { API_ENDPOINTS } from "../../api/urls";
 import { BookDataType } from '../../types/BookTypes';
 
 const BookList = () => {
     const [books, setBooks] = useState<BookDataType[]>([]);
-    const [newBook, setNewBook] = useState<Partial<BookDataType>>({});
     const [selectedBook, setSelectedBook] = useState<Partial<BookDataType> | null>(null);
-    const [bookHtml, setBookHtml] = useState<string>('');
-    const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-
-    const [isEditing, setIsEditing] = useState(false); // 編集モード管理
-    const [isCreating, setIsCreating] = useState(false); // 作成モード管理
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [warningMessage, setWarningMessage] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     useEffect(() => {
-        axios.get<BookDataType[]>('http://localhost:5000/books/init')
+        axios.get<BookDataType[]>(API_ENDPOINTS.getBooksInit())
             .then((res) => {
                 console.log({ res: res.data });
                 setBooks(res.data);
             });
     }, []);
 
+    // 一定時間後にメッセージを消すためのuseEffect
+    useEffect(() => {
+        if (successMessage || errorMessage || warningMessage) {
+            const timer = setTimeout(() => {
+                setSuccessMessage(null);
+                setErrorMessage(null);
+                setWarningMessage(null);
+            }, 4000);
+
+            return () => clearTimeout(timer); // クリーンアップ
+        }
+    }, [successMessage, errorMessage, warningMessage]);
+
     const handleOpenInNewTab = (url: string) => {
         if (!url) return;
         window.open(url, '_blank', 'noopener,noreferrer'); // 別タブで開く
     };
 
-    const handleEditClick = (book: BookDataType) => {
-        setSelectedBook(book);
-        setIsEditing(true);
-        console.log('edit button is clicked.');
-    };
-
-    const handleDeleteClick = (book: BookDataType) => {
-        console.log('delete button is clicked.');
+    const handleDelete = async (book: BookDataType) => {
+        try {
+            const confirmMessage = `Delete 「${book.title}」 ?`;
+            if (!window.confirm(confirmMessage)) { return; }
+    
+            const res: AxiosResponse<BookDataType> = await axios.delete<BookDataType>(API_ENDPOINTS.deleteBook(book.id));
+            setSuccessMessage(`「${res.data.title}」 is Deleted. `);
+            setBooks((prev) => prev.filter(prevBook => prevBook.id !== book.id));
+        } catch (e) {
+            setErrorMessage("Failed to Delete");
+        } finally {
+        }
     }
-
-    const handleCreateClick = () => {
-        setIsCreating(true);
-    };
-
-    const toggleEditor = async () => {
-        // setIsEditorOpen(!isEditorOpen);
-        if (!isEditorOpen) {
-            setLoading(true);
-            try {
-                // 空の場合データを取得するAPI呼び出す
-                if (bookHtml === '') {
-                    const data = await new Promise<string>((resolve) =>
-                        setTimeout(() => resolve('<p>Fetched HTML content</p>'), 2000)
-                    );
-                    setBookHtml(data);
-                }
-            } catch (error) {
-                console.error('Failed to fetch HTML content', error);
-            } finally {
-                setLoading(false);
-                setIsEditorOpen(true);
-            }
-        } else {
-            setIsEditorOpen(false);
-        }
-    };
-
-    const handleContentChange = (newContent: string) => {
-        setBookHtml(newContent);
-    };
-
-    const handlePublishedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (selectedBook) {
-            setSelectedBook({
-                ...selectedBook,
-                isPublished: e.target.checked,
-            });
-        }
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        if (selectedBook) {
-            setSelectedBook({
-                ...selectedBook,
-                [e.target.name]: e.target.value,
-            });
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        console.log('handleSubmit is called');
-
-        e.preventDefault();
-        axios.post('http://localhost:5000/books', newBook)
-            .then((res) => {
-                setBooks([...books, res.data]);
-                setNewBook({});
-            });
-    };
 
     const handleBookSelect = (book: BookDataType) => {
         setSelectedBook(book);
-    };
-
-    const handleUpdate = (e: React.FormEvent) => {
-        console.log('handleUpdate is called.');
-
-        e.preventDefault();
-        if (selectedBook && selectedBook.id) {
-            console.log('handleUpdate is called2');
-
-            axios.put(`http://localhost:5000/books/${selectedBook.id}`, selectedBook)
-                .then((response) => {
-                    setBooks(books.map(book => book.id === selectedBook.id ? response.data : book));
-                    setSelectedBook(null);
-                });
-        }
     };
 
     return (
@@ -152,14 +91,14 @@ const BookList = () => {
                                         <FiExternalLink /> {/* アイコン表示 */}
                                     </button>
                                 )}
-                                <Link 
+                                <Link
                                     to={`/edit/${book.id}`}
-                                    className="cursor-pointer bg-orange-500 text-white ml-2 px-4 py-2 rounded-md hover:bg-orange-600 transition-colors text-sm font-medium"    
+                                    className="cursor-pointer bg-orange-500 text-white ml-2 px-4 py-2 rounded-md hover:bg-orange-600 transition-colors text-sm font-medium"
                                 >
                                     Edit
                                 </Link>
                                 <button
-                                    onClick={() => handleDeleteClick(book)}
+                                    onClick={() => handleDelete(book)}
                                     className="cursor-pointer bg-red-500 text-white ml-2 px-2 py-2 rounded-md hover:bg-red-600 transition-colors text-sm font-medium"
                                 >
                                     Delete
@@ -170,7 +109,35 @@ const BookList = () => {
                 </div>
             </div>
 
-            
+            {/* 成功メッセージ */}
+            {successMessage && (
+                <div className="fixed top-4 inset-x-0 flex justify-center items-center">
+                    <div className="bg-green-500 text-white px-4 py-2 rounded shadow-lg w-1/3 text-center">
+                        <p
+                            dangerouslySetInnerHTML={{ __html: successMessage }}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Warning Message */}
+            {warningMessage && (
+                <div className="fixed top-4 inset-x-0 flex justify-center items-center">
+                    <div className="bg-yellow-500 text-white px-4 py-2 rounded shadow-lg w-1/3 text-center">
+                        <p>{warningMessage}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* エラーメッセージ */}
+            {errorMessage && (
+                <div className="fixed top-4 inset-x-0 flex justify-center items-center">
+                    <div className="bg-red-500 text-white px-4 py-2 rounded shadow-lg w-1/3 text-center">
+                        <p>{errorMessage}</p>
+                    </div>
+                </div>
+            )}
+
             {loading && (
                 <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
                     <div className="text-white">Loading...</div>

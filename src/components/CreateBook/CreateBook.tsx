@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 
 import { useState, useEffect } from 'react';
 
-import HtmlEditor from '../HtmlEditor/HtmlEditor';
-
+import HtmlEditor from '../Editor/HtmlEditor';
+import { API_ENDPOINTS } from "../../api/urls";
 import { BookDataType } from '../../types/BookTypes';
 
 const CreateBook = () => {
@@ -41,7 +41,7 @@ const CreateBook = () => {
         const requiredFields: Array<keyof BookDataType> = ['title', 'author', 'genre'];
         for (const field of requiredFields) {
             if (!newBook[field]) {
-                return `The "${field}" field is required.`;
+                return `The "${field.charAt(0).toUpperCase() + field.slice(1)}" field is required.`;
             }
         }
         return null;
@@ -60,7 +60,7 @@ const CreateBook = () => {
             return;
         }
 
-        axios.post('http://localhost:5000/books', newBook)
+        axios.post('http://localhost:5000/book/create', newBook)
             .then(async (res) => {
                 const resBook: BookDataType = res.data;
                 setNewBook(resBook);
@@ -96,7 +96,7 @@ const CreateBook = () => {
             try {
 
             } catch (error) {
-                console.error('Failed to fetch HTML content', error);
+                console.error('Failed to fetch HTMLBody content', error);
             } finally {
                 setIsHtmlEditorOpen(true);
                 setLoading(false);
@@ -114,7 +114,7 @@ const CreateBook = () => {
             try {
 
             } catch (error) {
-                console.error('Failed to fetch HTML content', error);
+                console.error('Failed to fetch HTMLBody content', error);
             } finally {
                 setIsSampleCodeEditorOpen(true);
                 setLoading(false);
@@ -168,17 +168,17 @@ const CreateBook = () => {
                         className="w-full p-2 border border-gray-300 rounded"
                     />
                     <textarea
-                        name="tableOfContents"
+                        name="toc"
                         placeholder="Table of Contents"
                         onChange={handleInputChange}
-                        value={newBook.tableOfContents || ''}
+                        value={newBook.toc || ''}
                         className="w-full p-2 border border-gray-300 rounded h-32"
                     ></textarea>
                     <textarea
-                        name="html"
-                        placeholder="Html"
+                        name="htmlBody"
+                        placeholder="HtmlBody"
                         onChange={handleInputChange}
-                        value={newBook.html || ''}
+                        value={newBook.htmlBody || ''}
                         className="hidden"
                     ></textarea>
                     <button
@@ -187,15 +187,15 @@ const CreateBook = () => {
                         className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-cyan-500 to-blue-500 group-hover:from-cyan-500 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-cyan-200 dark:focus:ring-cyan-800"
                     >
                         <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
-                            {isHtmlEditorOpen ? 'Close Html Editor' : 'Open Html Editor'}
+                            {isHtmlEditorOpen ? 'Close HtmlBody Editor' : 'Open HtmlBody Editor'}
                         </span>
                     </button>
                     <br />
                     <textarea
-                        name="sampleCode"
-                        placeholder="sampleCode"
+                        name="htmlUsage"
+                        placeholder="HtmlUsage"
                         onChange={handleInputChange}
-                        value={newBook.sampleCode || ''}
+                        value={newBook.htmlUsage || ''}
                         className="hidden"
                     ></textarea>
                     <button
@@ -204,7 +204,7 @@ const CreateBook = () => {
                         className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-cyan-500 to-blue-500 group-hover:from-cyan-500 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-cyan-200 dark:focus:ring-cyan-800"
                     >
                         <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
-                            {isHtmlEditorOpen ? 'Close SampleCode Editor' : 'Open SampleCode Editor'}
+                            {isHtmlEditorOpen ? 'Close HtmlUsage Editor' : 'Open HtmlUsage Editor'}
                         </span>
                     </button>
                     <input
@@ -254,32 +254,24 @@ const CreateBook = () => {
                 </form>
             </div>
 
-            {/* <div
-                className={`fixed top-0 right-0 h-full w-full bg-gray-900 bg-opacity-50 z-50 transition-opacity duration-300 
-                    ${isHtmlEditorOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`
-                }
-                onClick={toggleHtmlEditor}
-            /> */}
-
             <HtmlEditor
-                content={newBook.html || ''}
+                content={newBook.htmlBody || ''}
                 handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"html"}
+                contentType={"htmlBody"}
                 isOpen={isHtmlEditorOpen}
-                editorTitle={"Html Editor"}
+                editorTitle={"HtmlBody Editor"}
                 onClose={toggleHtmlEditor}
             />
 
             <HtmlEditor
-                content={newBook.sampleCode || ''}
+                content={newBook.htmlUsage || ''}
                 handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"sampleCode"}
+                contentType={"htmlUsage"}
                 isOpen={isSampleCodeEditorOpen}
                 editorTitle={"Sample Code Editor"}
                 onClose={toggleSampleCodeEditor}
             />
 
-            {/* 成功メッセージ */}
             {successMessage && (
                 <div className="fixed top-4 inset-x-0 flex justify-center items-center">
                     <div className="bg-green-500 text-white px-4 py-2 rounded shadow-lg w-1/3 text-center">
@@ -288,7 +280,6 @@ const CreateBook = () => {
                 </div>
             )}
 
-            {/* エラーメッセージ */}
             {errorMessage && (
                 <div className="fixed top-4 inset-x-0 flex justify-center items-center">
                     <div className="bg-red-500 text-white px-4 py-2 rounded shadow-lg w-1/3 text-center">
@@ -298,11 +289,32 @@ const CreateBook = () => {
             )}
 
             {loading && (
-                <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="text-white">Loading...</div>
+                <div className="fixed inset-0 bg-gray-800 bg-opacity-60 flex items-center justify-center z-50 w-full h-full">
+                    <div className="flex flex-col items-center">
+                        <svg
+                            className="animate-spin h-12 w-12 text-white mb-4"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                            ></circle>
+                            <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8v8h8a8 8 0 11-8 8V12H4z"
+                            ></path>
+                        </svg>
+                        <div className="text-white text-2xl">Loading...</div>
+                    </div>
                 </div>
             )}
-
         </div>
     );
 };
