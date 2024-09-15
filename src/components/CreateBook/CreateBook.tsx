@@ -1,84 +1,102 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { FaSpinner } from 'react-icons/fa';
 
 import { useState, useEffect } from 'react';
 
 import HtmlEditor from '../Editor/HtmlEditor';
+import MarkdownEditor from '../Editor/MarkdownEditor';
 import { API_ENDPOINTS } from "../../api/urls";
-import { BookDataType } from '../../types/BookTypes';
+import * as BT from '../../types/BookTypes';
 
 const CreateBook = () => {
-    const [newBook, setNewBook] = useState<Partial<BookDataType>>({
-        title: "", // 初期値を空文字に設定
+    let initData: BT.BookDataType = {
+        title: "",
         author: "",
         genre: "",
         isPublished: false,
-    });
-    // const [selectedBook, setSelectedBook] = useState<Partial<BookDataType> | null>(null);
-    const [isHtmlEditorOpen, setIsHtmlEditorOpen] = useState(false);
-    const [isSampleCodeEditorOpen, setIsSampleCodeEditorOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null); // 成功メッセージの状態
+    };
+
+    const [newBook, setNewBook] = useState<BT.BookDataType>(initData);
+
+    const [isMdTocOpen, setIsMdTocOpen] = useState<boolean>(false);
+    const [isMdBodyOpen, setIsMdBodyOpen] = useState<boolean>(false);
+    const [isHtmlBodyOpen, setIsHtmlBodyOpen] = useState<boolean>(false);
+    const [isMdUsageOpen, setIsMdUsageOpen] = useState<boolean>(false);
+    const [isHtmlUsageOpen, setIsHtmlUsageOpen] = useState<boolean>(false);
+    const [isMdSummaryOpen, setIsMdSummaryOpen] = useState<boolean>(false);
+
+    const [loading, setLoading] = useState<string>('');
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [buttonDisabled, setButtonDisabled] = useState(false); // 送信状態を管理
+    const [warningMessage, setWarningMessage] = useState<string | null>(null);
+    const [buttonDisabled, setButtonDisabled] = useState(false);
 
     const navigate = useNavigate(); // useNavigateフックを使う
 
     // 一定時間後にメッセージを消すためのuseEffect
     useEffect(() => {
-        if (successMessage || errorMessage) {
+        if (successMessage || errorMessage || warningMessage) {
             const timer = setTimeout(() => {
                 setSuccessMessage(null);
                 setErrorMessage(null);
+                setWarningMessage(null);
             }, 3000); // 3秒後にメッセージを消す
 
             return () => clearTimeout(timer); // クリーンアップ
         }
-    }, [successMessage, errorMessage]);
+    }, [successMessage, errorMessage, warningMessage]);
 
     // バリデーション
-    const validateForm = () => {
-        const requiredFields: Array<keyof BookDataType> = ['title', 'author', 'genre'];
+    const requiredCheck = (): BT.RequiredFieldType | '' => {
+        const requiredFields: BT.RequiredFieldType[] = ['title', 'author', 'genre'];
         for (const field of requiredFields) {
-            if (!newBook[field]) {
-                return `The "${field.charAt(0).toUpperCase() + field.slice(1)}" field is required.`;
-            }
+            if (!newBook[field]) { return field; }
         }
-        return null;
+        return '';
     };
 
-    const postSubmit = (e: React.FormEvent) => {
+    const extractCreateData = (): Partial<BT.BookDataType> => {
+        const extractedData: Partial<BT.BookDataType> = {};
+    
+        Object.entries(newBook).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '' && !Number.isNaN(value)) {
+                // `key` を `keyof BT.BookDataType` にキャスト
+                extractedData[key as keyof BT.BookDataType] = value;
+            }
+        });
+    
+        return extractedData;
+    };
+
+
+    const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        setButtonDisabled(true); // ボタンを押したら送信状態に変更
+        try {
+            setButtonDisabled(true);
 
-        // フォームバリデーション
-        const error = validateForm();
-        if (error) {
-            setErrorMessage(error);
-            setSuccessMessage(null);
+            const field: BT.RequiredFieldType | '' = requiredCheck();
+            if (field !== '') {
+                setErrorMessage(`The "${field.charAt(0).toUpperCase() + field.slice(1)}" field is required.`);
+                return;
+            }
+
+            const extractedData: Partial<BT.BookDataType> = extractCreateData();
+            console.log({extractedData})
+
+            const confirmMessage = `Are you sure create?`;
+            if (!window.confirm(confirmMessage)) { return; }
+
+            const res: AxiosResponse<BT.BookDataType> = await axios.post<BT.BookDataType>(API_ENDPOINTS.postCreate(), extractedData);
+            const resBook: BT.BookDataType = res.data;
+            setNewBook(resBook);
+            setSuccessMessage('Book created successfully!');
+            await setTime(1000, () => navigate('/'));
+        } catch (e) {
+            setErrorMessage("Failed to Update");
+        } finally {
             setButtonDisabled(false);
-            return;
         }
-
-        axios.post('http://localhost:5000/book/create', newBook)
-            .then(async (res) => {
-                const resBook: BookDataType = res.data;
-                setNewBook(resBook);
-                setErrorMessage(null); // 成功した場合はエラーメッセージをクリア
-                setSuccessMessage('Book created successfully!'); // 成功メッセージを設定
-                await new Promise(() => {
-                    setTimeout(() => {
-                        navigate('/');
-                    }, 1000);
-                });
-            })
-            .catch(() => {
-                setErrorMessage('Failed to add the book. Please try again.'); // エラーメッセージを設定
-                setSuccessMessage(null); // 成功メッセージはクリア
-
-            }).finally(() => {
-                setButtonDisabled(false); // エラーがあった場合に再度ボタンを有効にするため
-            });
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -89,41 +107,52 @@ const CreateBook = () => {
         }));
     };
 
-    const toggleHtmlEditor = async () => {
-        if (!isHtmlEditorOpen) {
-            setLoading(true);
-
-            try {
-
-            } catch (error) {
-                console.error('Failed to fetch HTMLBody content', error);
-            } finally {
-                setIsHtmlEditorOpen(true);
-                setLoading(false);
-            }
+    const toggleMdTocEditor = () => {
+        if (!isMdTocOpen) {
+            setIsMdTocOpen(true);
         } else {
-            setIsHtmlEditorOpen(false);
-            setLoading(false);
+            setIsMdTocOpen(false);
+        }
+    }
+
+    const toggleMdBodyEditor = async () => {
+        if (!isMdBodyOpen) {
+            setIsMdBodyOpen(true);
+        } else {
+            setIsMdBodyOpen(false);
+        }
+    }
+
+    const toggleHtmlBodyEditor = async () => {
+        if (!isHtmlBodyOpen) {
+            setIsHtmlBodyOpen(true);
+        } else {
+            setIsHtmlBodyOpen(false);
         }
     };
 
-    const toggleSampleCodeEditor = async () => {
-        if (!isSampleCodeEditorOpen) {
-            setLoading(true);
-
-            try {
-
-            } catch (error) {
-                console.error('Failed to fetch HTMLBody content', error);
-            } finally {
-                setIsSampleCodeEditorOpen(true);
-                setLoading(false);
-            }
+    const toggleMdUsageEditor = async () => {
+        if (!isMdUsageOpen) {
+            setIsMdUsageOpen(true);
         } else {
-            setIsSampleCodeEditorOpen(false);
-            setLoading(false);
+            setIsMdUsageOpen(false);
         }
+    }
 
+    const toggleHtmlUsageEditor = async () => {
+        if (!isHtmlUsageOpen) {
+            setIsHtmlUsageOpen(true);
+        } else {
+            setIsHtmlUsageOpen(false);
+        }
+    }
+
+    const toggleMdSummaryEditor = () => {
+        if (!isMdSummaryOpen) {
+            setIsMdSummaryOpen(true);
+        } else {
+            setIsMdSummaryOpen(false);
+        }
     }
 
     const handleContentsChange = (contentType: string, newContent: string) => {
@@ -133,9 +162,18 @@ const CreateBook = () => {
         }));
     };
 
+    const setTime = async (time: number, callback?: () => void): Promise<void> => {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                if (callback) { callback(); }
+                resolve();
+            }, time)
+        })
+    }
+
     return (
-        <div className="container flex justify-center mx-auto p-4">
-            <div className="bg-white shadow-md rounded-lg p-6">
+        <div className="container flex justify-center w-full mx-auto p-4">
+            <div className="w-full bg-white shadow-md rounded-lg p-6">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold">Create</h1>
                     <button
@@ -145,137 +183,307 @@ const CreateBook = () => {
                         Back
                     </button>
                 </div>
-                <form onSubmit={postSubmit} className="space-y-4 w-full h-full">
-                    <input
-                        name="title"
-                        placeholder="Title"
-                        onChange={handleInputChange}
-                        value={newBook.title}
-                        className="w-full p-2 border border-gray-300 rounded"
-                    />
-                    <input
-                        name="author"
-                        placeholder="Author"
-                        onChange={handleInputChange}
-                        value={newBook.author || ''}
-                        className="w-full p-2 border border-gray-300 rounded"
-                    />
-                    <input
-                        name="genre"
-                        placeholder="Genre"
-                        onChange={handleInputChange}
-                        value={newBook.genre || ''}
-                        className="w-full p-2 border border-gray-300 rounded"
-                    />
-                    <textarea
-                        name="toc"
-                        placeholder="Table of Contents"
-                        onChange={handleInputChange}
-                        value={newBook.toc || ''}
-                        className="w-full p-2 border border-gray-300 rounded h-32"
-                    ></textarea>
-                    <textarea
-                        name="htmlBody"
-                        placeholder="HtmlBody"
-                        onChange={handleInputChange}
-                        value={newBook.htmlBody || ''}
-                        className="hidden"
-                    ></textarea>
-                    <button
-                        type="button"
-                        onClick={toggleHtmlEditor}
-                        className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-cyan-500 to-blue-500 group-hover:from-cyan-500 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-cyan-200 dark:focus:ring-cyan-800"
-                    >
-                        <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
-                            {isHtmlEditorOpen ? 'Close HtmlBody Editor' : 'Open HtmlBody Editor'}
-                        </span>
-                    </button>
-                    <br />
-                    <textarea
-                        name="htmlUsage"
-                        placeholder="HtmlUsage"
-                        onChange={handleInputChange}
-                        value={newBook.htmlUsage || ''}
-                        className="hidden"
-                    ></textarea>
-                    <button
-                        type="button"
-                        onClick={toggleSampleCodeEditor}
-                        className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-cyan-500 to-blue-500 group-hover:from-cyan-500 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-cyan-200 dark:focus:ring-cyan-800"
-                    >
-                        <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
-                            {isHtmlEditorOpen ? 'Close HtmlUsage Editor' : 'Open HtmlUsage Editor'}
-                        </span>
-                    </button>
-                    <input
-                        name="cover"
-                        placeholder="Cover Path"
-                        onChange={handleInputChange}
-                        value={newBook.cover || ''}
-                        className="w-full p-2 border border-gray-300 rounded"
-                    />
-                    <input
-                        name="language"
-                        placeholder="Language"
-                        onChange={handleInputChange}
-                        value={newBook.language || ''}
-                        className="w-full p-2 border border-gray-300 rounded"
-                    />
-                    <textarea
-                        name="summary"
-                        placeholder="Summary"
-                        onChange={handleInputChange}
-                        value={newBook.summary || ''}
-                        className="w-full p-2 border border-gray-300 rounded h-24"
-                    ></textarea>
+                <form onSubmit={handleCreate} className="space-y-4 w-full h-full">
+                    <div>
+                        <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                            Title
+                        </label>
+                        <input
+                            id="title"
+                            name="title"
+                            placeholder="Title"
+                            onChange={handleInputChange}
+                            value={newBook.title}
+                            className="w-full p-2 border border-gray-300 rounded"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="author" className="block text-sm font-medium text-gray-700 mb-1">
+                            Author
+                        </label>
+                        <input
+                            id="author"
+                            name="author"
+                            placeholder="Author"
+                            onChange={handleInputChange}
+                            value={newBook.author || ''}
+                            className="w-full p-2 border border-gray-300 rounded"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="genre" className="block text-sm font-medium text-gray-700 mb-1">
+                            Genre
+                        </label>
+                        <input
+                            id="genre"
+                            name="genre"
+                            placeholder="Genre"
+                            onChange={handleInputChange}
+                            value={newBook.genre || ''}
+                            className="w-full p-2 border border-gray-300 rounded"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="toc" className="block text-sm font-medium text-gray-700 mb-1">
+                            Table Of Contents
+                        </label>
+                        <textarea
+                            id="toc"
+                            name="toc"
+                            placeholder="Table of Contents"
+                            onChange={handleInputChange}
+                            value={newBook.toc || ''}
+                            className="hidden"
+                        // className="w-full p-2 border border-gray-300 rounded h-24"
+                        ></textarea>
+                        <button
+                            type="button"
+                            onClick={toggleMdTocEditor}
+                            className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400"
+                        >
+                            <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                                Open Markdown Editor
+                            </span>
+                        </button>
+                    </div>
+                    <div>
+                        <label htmlFor="htmlBody" className="block text-sm font-medium text-gray-700 mb-1">
+                            Body
+                        </label>
+                        <textarea
+                            id="mdBody"
+                            name="mdBody"
+                            placeholder="mdBody"
+                            onChange={handleInputChange}
+                            value={newBook.mdBody || ''}
+                            className="hidden"
+                        ></textarea>
+                        <button
+                            type="button"
+                            onClick={toggleMdBodyEditor}
+                            className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400"
+                        >
+                            <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                                Open Markdown Editor
+                            </span>
+                        </button>
+                        <textarea
+                            id="htmlBody"
+                            name="htmlBody"
+                            placeholder="HtmlBody"
+                            onChange={handleInputChange}
+                            value={newBook.htmlBody || ''}
+                            className="hidden"
+                        ></textarea>
+                        <button
+                            type="button"
+                            onClick={toggleHtmlBodyEditor}
+                            className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-cyan-500 to-blue-500 group-hover:from-cyan-500 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-cyan-200 dark:focus:ring-cyan-800"
+                        >
+                            <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                                Open Html Editor
+                            </span>
+                        </button>
+                    </div>
+                    <div>
+                        <label htmlFor="htmlUsage" className="block text-sm font-medium text-gray-700 mb-1">
+                            Usage
+                        </label>
+                        <textarea
+                            id="mdUsage"
+                            name="mdUsage"
+                            placeholder="mdUsage"
+                            onChange={handleInputChange}
+                            value={newBook.mdUsage || ''}
+                            className="hidden"
+                        ></textarea>
+                        <button
+                            type="button"
+                            onClick={toggleMdUsageEditor}
+                            className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400"
+                        >
+                            <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                                Open Markdown Editor
+                            </span>
+                        </button>
+                        <textarea
+                            id="htmlUsage"
+                            name="htmlUsage"
+                            placeholder="htmlUsage"
+                            onChange={handleInputChange}
+                            value={newBook.htmlUsage || ''}
+                            className="hidden"
+                        ></textarea>
+                        <button
+                            type="button"
+                            onClick={toggleHtmlUsageEditor}
+                            className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-cyan-500 to-blue-500 group-hover:from-cyan-500 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-cyan-200 dark:focus:ring-cyan-800"
+                        >
+                            <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                                Open Html Editor
+                            </span>
+                        </button>
+                    </div>
+                    <div>
+                        <label htmlFor="cover" className="block text-sm font-medium text-gray-700 mb-1">
+                            Cover
+                        </label>
+                        <input
+                            id="cover"
+                            name="cover"
+                            placeholder="Cover"
+                            onChange={handleInputChange}
+                            value={newBook.cover || ''}
+                            className="w-full p-2 border border-gray-300 rounded"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-1">
+                            Language
+                        </label>
+                        <input
+                            id="language"
+                            name="language"
+                            placeholder="Language"
+                            onChange={handleInputChange}
+                            value={newBook.language || ''}
+                            className="w-full p-2 border border-gray-300 rounded"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-1">
+                            Summary
+                        </label>
+                        <textarea
+                            id="summary"
+                            name="summary"
+                            placeholder="Summary"
+                            onChange={handleInputChange}
+                            value={newBook.summary || ''}
+                            className="hidden"
+                        ></textarea>
+                        <button
+                            type="button"
+                            onClick={toggleMdSummaryEditor}
+                            className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400"
+                        >
+                            <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                                Open Markdown Editor
+                            </span>
+                        </button>
+                    </div>
                     <div className="flex items-center">
                         <input
                             type="checkbox"
                             name="isPublished"
-                            onChange={(e) => setNewBook({ ...newBook, isPublished: e.target.checked })}
                             className="mr-2"
+                            checked={newBook.isPublished || false}
+                            onChange={(e) => setNewBook((prev) => ({
+                                ...prev,
+                                isPublished: e.target.checked,
+                            }))}
                         />
                         <label>Published</label>
                     </div>
-                    <input
-                        name="kindle"
-                        placeholder="Kindle URL"
-                        onChange={handleInputChange}
-                        value={newBook.kindle || ''}
-                        className="w-full p-2 border border-gray-300 rounded"
-                    />
+                    <div>
+                        <label htmlFor="kindle" className="block text-sm font-medium text-gray-700 mb-1">
+                            Kindle URL
+                        </label>
+                        <input
+                            id="kindle"
+                            name="kindle"
+                            placeholder="Kindle URL"
+                            onChange={handleInputChange}
+                            value={newBook.kindle || ''}
+                            className="w-full p-2 border border-gray-300 rounded"
+                        />
+                    </div>
                     <button
                         type="submit"
-                        className="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
+                        className={`text-white bg-gradient-to-r from-cyan-500 to-blue-500 
+                             focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 
+                            font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 min-w-[90px]
+                            ${buttonDisabled ? '' : 'hover:bg-gradient-to-bl'}
+                        `}
                         disabled={buttonDisabled} // 送信中なら無効化
                     >
-                        Create
+                        {buttonDisabled ? (
+                            <FaSpinner className="animate-spin inline-block" />
+                        ) : (
+                            'Create'
+                        )}
                     </button>
                 </form>
             </div>
 
-            <HtmlEditor
-                content={newBook.htmlBody || ''}
+            <MarkdownEditor
+                bookData={newBook}
                 handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"htmlBody"}
-                isOpen={isHtmlEditorOpen}
-                editorTitle={"HtmlBody Editor"}
-                onClose={toggleHtmlEditor}
+                contentType={"toc"}
+                isOpen={isMdTocOpen}
+                editorTitle={"Markdown Table Of Contents Editor"}
+                onClose={toggleMdTocEditor}
+            />
+
+            <MarkdownEditor
+                bookData={newBook}
+                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                contentType={"mdBody"}
+                isOpen={isMdBodyOpen}
+                editorTitle={"Markdown Body Editor"}
+                onClose={toggleMdBodyEditor}
             />
 
             <HtmlEditor
-                content={newBook.htmlUsage || ''}
+                bookData={newBook}
+                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                contentType={"htmlBody"}
+                isOpen={isHtmlBodyOpen}
+                editorTitle={"Html Body Editor"}
+                onClose={toggleHtmlBodyEditor}
+            />
+
+            <MarkdownEditor
+                bookData={newBook}
+                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                contentType={"mdUsage"}
+                isOpen={isMdUsageOpen}
+                editorTitle={"Markdown Usage Editor"}
+                onClose={toggleMdUsageEditor}
+            />
+
+            <HtmlEditor
+                bookData={newBook}
                 handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
                 contentType={"htmlUsage"}
-                isOpen={isSampleCodeEditorOpen}
-                editorTitle={"Sample Code Editor"}
-                onClose={toggleSampleCodeEditor}
+                isOpen={isHtmlUsageOpen}
+                editorTitle={"Html Usage Editor"}
+                onClose={toggleHtmlUsageEditor}
+            />
+
+            <MarkdownEditor
+                bookData={newBook}
+                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                contentType={"summary"}
+                isOpen={isMdSummaryOpen}
+                editorTitle={"Markdown Summary Editor"}
+                onClose={toggleMdSummaryEditor}
             />
 
             {successMessage && (
                 <div className="fixed top-4 inset-x-0 flex justify-center items-center">
                     <div className="bg-green-500 text-white px-4 py-2 rounded shadow-lg w-1/3 text-center">
-                        <p>{successMessage}</p>
+                        <p
+                            dangerouslySetInnerHTML={{ __html: successMessage }}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {warningMessage && (
+                <div className="fixed top-4 inset-x-0 flex justify-center items-center">
+                    <div className="bg-yellow-500 text-white px-4 py-2 rounded shadow-lg w-1/3 text-center">
+                        <p>{warningMessage}</p>
                     </div>
                 </div>
             )}
@@ -311,7 +519,7 @@ const CreateBook = () => {
                                 d="M4 12a8 8 0 018-8v8h8a8 8 0 11-8 8V12H4z"
                             ></path>
                         </svg>
-                        <div className="text-white text-2xl">Loading...</div>
+                        <div className="text-white text-2xl">{loading}</div>
                     </div>
                 </div>
             )}

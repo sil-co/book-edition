@@ -4,18 +4,20 @@ import { FiExternalLink } from 'react-icons/fi'; // 別タブアイコンをimpo
 
 import { useState, useEffect } from 'react';
 import { API_ENDPOINTS } from "../../api/urls";
-import { BookDataType } from '../../types/BookTypes';
+import * as BT from '../../types/BookTypes';
 
 const BookList = () => {
-    const [books, setBooks] = useState<BookDataType[]>([]);
-    const [selectedBook, setSelectedBook] = useState<Partial<BookDataType> | null>(null);
+    const [books, setBooks] = useState<BT.BookDataType[]>([]);
+    const [selectedBook, setSelectedBook] = useState<Partial<BT.BookDataType> | null>(null);
+
+    const [isDisabled, setIsDisabled] = useState<boolean>(false);
     const [loading, setLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [warningMessage, setWarningMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     useEffect(() => {
-        axios.get<BookDataType[]>(API_ENDPOINTS.getBooksInit())
+        axios.get<BT.BookDataType[]>(API_ENDPOINTS.getBooksInit())
             .then((res) => {
                 console.log({ res: res.data });
                 setBooks(res.data);
@@ -40,28 +42,29 @@ const BookList = () => {
         window.open(url, '_blank', 'noopener,noreferrer'); // 別タブで開く
     };
 
-    const handleDelete = async (book: BookDataType) => {
+    const handleDelete = async (book: BT.BookDataType) => {
         try {
-            const confirmMessage = `Delete 「${book.title}」 ?`;
+            const confirmMessage = `Are you sure delete 「${book.title}」 ?`;
             if (!window.confirm(confirmMessage)) { return; }
-    
-            const res: AxiosResponse<BookDataType> = await axios.delete<BookDataType>(API_ENDPOINTS.deleteBook(book.id));
-            setSuccessMessage(`「${res.data.title}」 is Deleted. `);
+            if (!book.id) { return; }
+
+            const res: AxiosResponse<BT.BookDataType> = await axios.delete<BT.BookDataType>(API_ENDPOINTS.deleteBook(book.id));
+            setSuccessMessage(`「${res.data.title}」 is deleted. `);
             setBooks((prev) => prev.filter(prevBook => prevBook.id !== book.id));
         } catch (e) {
-            setErrorMessage("Failed to Delete");
+            setErrorMessage("Failed to delete");
         } finally {
         }
     }
 
-    const handleBookSelect = (book: BookDataType) => {
+    const handleBookSelect = (book: BT.BookDataType) => {
         setSelectedBook(book);
     };
 
     return (
-        <div className="container mx-auto p-4 flex flex-col items-end">
-            <div className="container flex justify-center mx-auto p-4">
-                <div className="bg-white shadow-md rounded-lg p-6 mt-8 max-w-5xl w-full flex flex-col items-end">
+        <div className="container mx-auto p-0 sm:p-4 flex flex-col items-end">
+            <div className="container flex justify-center mx-auto p-0 sm:p-4">
+                <div className="bg-white shadow-md rounded-lg p-2 sm:p-6 mt-8 max-w-5xl w-full flex flex-col items-end">
                     <div className="w-full flex justify-between">
                         <h1 className="text-2xl font-bold mb-4">Book List</h1>
                         <Link to="/create" className="text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">New</Link>
@@ -72,7 +75,7 @@ const BookList = () => {
                             <li
                                 key={book.id}
                                 onClick={() => handleBookSelect(book)}
-                                className="bg-white w-full shadow-md hover:shadow-lg p-4 rounded-lg transition-shadow flex justify-between items-center"
+                                className="bg-white w-full shadow-md hover:shadow-lg p-4 rounded-lg transition-shadow flex justify-between items-center relative"
                             >
                                 <div className="flex-grow mr-4">
                                     <h3 className="font-semibold text-lg text-gray-800 truncate">{book.title}</h3>
@@ -92,17 +95,29 @@ const BookList = () => {
                                     </button>
                                 )}
                                 <Link
-                                    to={`/edit/${book.id}`}
-                                    className="cursor-pointer bg-orange-500 text-white ml-2 px-4 py-2 rounded-md hover:bg-orange-600 transition-colors text-sm font-medium"
+                                    to={book.isGptRunning ? "#" : `/edit/${book.id}`}
+                                    onClick={(e) => book.isGptRunning && e.preventDefault()}
+                                    className={`cursor-pointer  text-white ml-2 px-4 py-2 rounded-md  transition-colors text-sm font-medium 
+                                        ${book.isGptRunning ? "bg-gray-400 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"}`
+                                    }
                                 >
                                     Edit
                                 </Link>
                                 <button
                                     onClick={() => handleDelete(book)}
-                                    className="cursor-pointer bg-red-500 text-white ml-2 px-2 py-2 rounded-md hover:bg-red-600 transition-colors text-sm font-medium"
+                                    className={`cursor-pointer  text-white ml-2 px-2 py-2 rounded-md transition-colors text-sm font-medium
+                                        ${book.isGptRunning ? "bg-gray-400 cursor-not-allowed" : "bg-red-500 hover:bg-red-600"}`
+                                    }
+                                    disabled={book.isGptRunning}
                                 >
                                     Delete
                                 </button>
+                                {book.isGptRunning && (
+                                    <div className="absolute inset-0 bg-emerald-700	bg-opacity-60 text-white flex p-1 sm:p-2 items-center justify-center rounded-lg">
+                                        <span className="text-2xl font-semibold">Cannot edit because GPT is running... {book.gptProgress}</span>
+                                        <span></span>
+                                    </div>
+                                )}
                             </li>
                         ))}
                     </ul>

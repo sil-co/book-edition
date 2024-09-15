@@ -26,11 +26,8 @@ const App = () => {
                     </Routes>
                 </div>
             </Router>
-
-            {/* <BookList /> */}
         </div>
     );
 }
-
 
 export default App

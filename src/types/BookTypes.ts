@@ -1,6 +1,6 @@
 
 export interface BookDataType {
-    id: number;
+    id?: number;
     title: string;
     author: string;
     genre: string;
@@ -14,8 +14,14 @@ export interface BookDataType {
     summary?: string;
     isPublished: boolean;
     kindle?: string;
+    isGptRunning?: boolean;
+    temporaryGpt?: string;
+    gptProgress?: string;
     publishedAt?: string;
 }
+
+export type EditorContentType = 'toc' | 'htmlBody' | 'mdBody' | 'htmlUsage' | 'mdUsage' | 'summary';
+
 
 export interface MdTocType {
     mdBody: string;
@@ -29,8 +35,16 @@ export interface HtmlBodyType {
     htmlBody: string;
 }
 
+export interface IsGptType {
+    isGptRunning: boolean;
+}
+
 export interface MdUsageType {
     mdUsage: string;
+}
+
+export interface TemporaryGptType {
+    temporaryGpt: string;
 }
 
 export interface HtmlUsageType {

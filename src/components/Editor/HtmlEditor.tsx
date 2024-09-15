@@ -1,16 +1,18 @@
 import { ChangeEvent } from 'react';
 
+import * as BT from '../../types/BookTypes';
+
 interface HtmlEditorProps {
-    content: string;
+    bookData: BT.BookDataType;
     handleContentsChange: (contentType: string, newContent: string) => void;
-    contentType: string;
-    isOpen?: boolean;
-    onClose?: () => void;
-    editorTitle?: string;
+    contentType: BT.EditorContentType;
+    isOpen: boolean;
+    onClose: () => void;
+    editorTitle: string;
 }
 
 const HtmlEditor: React.FC<HtmlEditorProps> = ({
-    content,
+    bookData,
     handleContentsChange,
     contentType,
     isOpen,
@@ -23,7 +25,7 @@ const HtmlEditor: React.FC<HtmlEditorProps> = ({
     };
 
     return (
-        <div 
+        <div
             className={`fixed m-0 top-0 right-0 h-full w-full bg-white shadow-lg z-50 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
         >
             <div className="p-4 flex justify-between items-center border-b">
@@ -42,14 +44,14 @@ const HtmlEditor: React.FC<HtmlEditorProps> = ({
                         name="html"
                         placeholder="Content"
                         onChange={handleInputChange}
-                        value={content}
+                        value={bookData[contentType]}
                         className="w-full h-[90%] p-2 border border-gray-300 rounded h-96"
                     ></textarea>
                 </div>
                 <div className="w-full md:w-1/2 pl-2 h-full">
                     <div
                         className="w-full h-[90%] p-2 border border-gray-300 rounded h-96 overflow-auto"
-                        dangerouslySetInnerHTML={{ __html: content }}
+                        dangerouslySetInnerHTML={{ __html: bookData[contentType] || '' }}
                     ></div>
                 </div>
             </div>
