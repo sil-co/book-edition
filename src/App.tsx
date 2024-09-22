@@ -1,32 +1,128 @@
 import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 
+import { GlobalStateProvider } from './context/GlobalStateProvider';
+import { useGlobalState } from './context/GlobalStateProvider';
+import { useEffect } from 'react';
+// コンポーネントを遅延読み込み
+// import { Suspense, lazy } from 'react';
+// const MyBooks = lazy(() => import('./components/MyBooks/MyBooks'));
+// const CreateBook = lazy(() => import('./components/CreateBook/CreateBook'));
+// const EditBook = lazy(() => import('./components/EditBook/EditBook'));
+
+import MyBooks from './components/BookList/MyBooks';
 import BookList from './components/BookList/BookList';
 import CreateBook from './components/CreateBook/CreateBook';
 import EditBook from './components/EditBook/EditBook';
+import Login from "./components/Auth/Login";
+import Register from "./components/Auth/Register";
+import ProtectedRoute from './components/Auth/ProtectRoute';
+import ErrorModal from './components/Modal/ErrorModal';
+import SuccessModal from './components/Modal/SuccessModal';
+import ImageModal from './components/Modal/ImageModal';
+import WarningModal from './components/Modal/WarningModal';
+import Loading from './components/Modal/Loading';
+
+const AppContent = () => {
+    const {
+        loadingTxt,
+        errorMessage,
+        warningMessage,
+        imageModalSrc,
+        successMessage,
+        setErrorMessage,
+        setSuccessMessage,
+        setWarningMessage,
+        setImageModalSrc,
+        token,
+        setToken,
+    } = useGlobalState();
+
+    const closeModal = () => { setImageModalSrc(''); };
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (successMessage || errorMessage || warningMessage) {
+            const timer = setTimeout(() => {
+                setSuccessMessage(null);
+                setErrorMessage(null);
+                setWarningMessage(null);
+            }, 5000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [successMessage, errorMessage, warningMessage]);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        setToken(token || '');
+        if (!token) {
+            navigate("/login?error=unauthorized");
+            return;
+        }
+    }, [])
+
+    return (
+        <>
+            <Routes>
+                <Route path="/" element={<BookList />} />
+                <Route path="/books" element={<ProtectedRoute><MyBooks /></ProtectedRoute>} />
+                <Route path="/edit/:id" element={<ProtectedRoute><EditBook /></ProtectedRoute>} />
+                <Route path="/create" element={<ProtectedRoute><CreateBook /></ProtectedRoute>} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+            </Routes>
+
+            {successMessage && <SuccessModal successMessage={successMessage} />}
+            {warningMessage && <WarningModal warningMessage={warningMessage} />}
+            {errorMessage && <ErrorModal errorMessage={errorMessage} />}
+            {imageModalSrc && <ImageModal closeModal={closeModal} imageModalSrc={imageModalSrc} />}
+            {loadingTxt && <Loading loadingTxt={loadingTxt} />}
+        </>
+    );
+};
+
 
 const App = () => {
     return (
-        <div>
+        <GlobalStateProvider>
             <Router>
-                <nav className="bg-gray-800 p-4 text-white">
-                    <div className="container mx-auto flex items-center">
-                        <ul className="flex space-x-4">
+                <nav className="bg-gray-900 p-4 text-white shadow-lg fixed w-full top-0">
+                    <div className="container mx-auto flex justify-between items-center">
+                        <div className="text-lg font-bold">
+                            <Link to="/">Auto Writing</Link>
+                        </div>
+                        <ul className="flex space-x-6">
                             <li>
-                                <Link to="/">Home</Link>
+                                <Link
+                                    to="/"
+                                    className="hover:text-gray-300 transition-colors duration-200">
+                                    Home
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    to="/register"
+                                    className="hover:text-gray-300 transition-colors duration-200">
+                                    Register
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    to="/login"
+                                    className="hover:text-gray-300 transition-colors duration-200">
+                                    Login
+                                </Link>
                             </li>
                         </ul>
                     </div>
                 </nav>
 
-                <div className="container mx-auto p-4">
-                    <Routes>
-                        <Route path="/" element={<BookList />} />
-                        <Route path="/edit/:id" element={<EditBook />} />
-                        <Route path="/create" element={<CreateBook />} />
-                    </Routes>
+                <div className="">
+                    <AppContent />
                 </div>
             </Router>
-        </div>
+        </GlobalStateProvider>
     );
 }
 

@@ -1,6 +1,6 @@
 
 export interface BookDataType {
-    id?: number;
+    id?: string;
     title: string;
     author: string;
     genre: string;
@@ -9,7 +9,6 @@ export interface BookDataType {
     mdBody?: string;
     htmlUsage?: string;
     mdUsage?: string;
-    cover?: string;
     language?: 'ja' | 'en';
     summary?: string;
     isPublished: boolean;
@@ -17,11 +16,20 @@ export interface BookDataType {
     isGptRunning?: boolean;
     temporaryGpt?: string;
     gptProgress?: string;
+    coverImageId?: string;
+    deleted?: boolean;
     publishedAt?: string;
+    // cover?: string;
 }
 
-export type EditorContentType = 'toc' | 'htmlBody' | 'mdBody' | 'htmlUsage' | 'mdUsage' | 'summary';
+export interface ImageData {
+    imagePreview: string;
+    imagePreviewPath: string;
+    imageSelected: string;
+    imageSelectedPath: string;
+}
 
+export type EditorContentType = 'toc' | 'htmlBody' | 'mdBody' | 'htmlUsage' | 'mdUsage' | 'summary' | 'coverImageId';
 
 export interface MdTocType {
     mdBody: string;
@@ -51,7 +59,7 @@ export interface HtmlUsageType {
     htmlUsage: string;
 }
 
-export type ColumnNamesType = 'id' | 'title' | 'author' | 'genre' | 'toc' | 'htmlBody' | 'mdBody' | 'htmlUsage' | 'mdUsage' | 'cover' | 'language' | 'summary' | 'isPublished' | 'kindle' | 'publishedAt';
+export type ColumnNamesType = 'id' | 'title' | 'author' | 'genre' | 'toc' | 'htmlBody' | 'mdBody' | 'htmlUsage' | 'mdUsage' | 'coverImageId' | 'language' | 'summary' | 'isPublished' | 'kindle' | 'publishedAt';
 
 export type RequiredFieldType = 'id' | 'title' | 'author' | 'genre' | 'toc' | 'htmlBody' | 'htmlUsage' | 'summary';
 

@@ -10,6 +10,13 @@ import { API_ENDPOINTS } from "../../api/urls";
 import * as BT from '../../types/BookTypes';
 
 const CreateBook = () => {
+    const navigate = useNavigate();
+    const token = localStorage.getItem('token');
+    if (!token) {
+        navigate("/login?error=unauthorized");
+        return;
+    }
+
     let initData: BT.BookDataType = {
         title: "",
         author: "",
@@ -31,8 +38,6 @@ const CreateBook = () => {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [warningMessage, setWarningMessage] = useState<string | null>(null);
     const [buttonDisabled, setButtonDisabled] = useState(false);
-
-    const navigate = useNavigate(); // useNavigateフックを使う
 
     // 一定時間後にメッセージを消すためのuseEffect
     useEffect(() => {
@@ -61,14 +66,12 @@ const CreateBook = () => {
     
         Object.entries(newBook).forEach(([key, value]) => {
             if (value !== undefined && value !== null && value !== '' && !Number.isNaN(value)) {
-                // `key` を `keyof BT.BookDataType` にキャスト
                 extractedData[key as keyof BT.BookDataType] = value;
             }
         });
     
         return extractedData;
     };
-
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -81,17 +84,18 @@ const CreateBook = () => {
                 return;
             }
 
-            const extractedData: Partial<BT.BookDataType> = extractCreateData();
-            console.log({extractedData})
+            const extractedData = extractCreateData();
 
             const confirmMessage = `Are you sure create?`;
             if (!window.confirm(confirmMessage)) { return; }
 
-            const res: AxiosResponse<BT.BookDataType> = await axios.post<BT.BookDataType>(API_ENDPOINTS.postCreate(), extractedData);
-            const resBook: BT.BookDataType = res.data;
-            setNewBook(resBook);
+            const res: AxiosResponse<BT.BookDataType> = await axios.post<BT.BookDataType>(
+                API_ENDPOINTS.postCreate(), 
+                extractedData, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
             setSuccessMessage('Book created successfully!');
-            await setTime(1000, () => navigate('/'));
+            await setTime(1000, () => navigate('/books'));
         } catch (e) {
             setErrorMessage("Failed to Update");
         } finally {
@@ -172,13 +176,13 @@ const CreateBook = () => {
     }
 
     return (
-        <div className="container flex justify-center w-full mx-auto p-4">
+        <div className="container flex justify-center w-full mx-auto p-4 mt-12">
             <div className="w-full bg-white shadow-md rounded-lg p-6">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold">Create</h1>
                     <button
                         className="cursor-pointer bg-gray-300 text-gray-800 ml-2 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors text-sm font-medium"
-                        onClick={() => navigate(-1)}
+                        onClick={() => navigate('/books')}
                     >
                         Back
                     </button>
@@ -325,17 +329,17 @@ const CreateBook = () => {
                         </button>
                     </div>
                     <div>
-                        <label htmlFor="cover" className="block text-sm font-medium text-gray-700 mb-1">
+                        {/* <label htmlFor="coverImageId" className="block text-sm font-medium text-gray-700 mb-1">
                             Cover
                         </label>
                         <input
-                            id="cover"
-                            name="cover"
+                            id="coverImageId"
+                            name="coverImageId"
                             placeholder="Cover"
                             onChange={handleInputChange}
-                            value={newBook.cover || ''}
+                            value={newBook.coverImageId || ''}
                             className="w-full p-2 border border-gray-300 rounded"
-                        />
+                        /> */}
                     </div>
                     <div>
                         <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-1">
