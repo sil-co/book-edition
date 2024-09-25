@@ -4,7 +4,7 @@ import * as BT from '../../types/BookTypes';
 
 interface HtmlEditorProps {
     bookData: BT.BookDataType;
-    handleContentsChange: (contentType: string, newContent: string) => void;
+    handleContentsChange: (contentType: keyof BT.BookDataType, newContent: string) => void;
     contentType: BT.EditorContentType;
     isOpen: boolean;
     onClose: () => void;

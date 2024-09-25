@@ -15,13 +15,14 @@ import * as OT from '../../types/OpenApiTypes';
 
 interface MarkdownEditorProps {
     bookData: BT.BookDataType;
-    handleContentsChange: (contentType: string, newContent: string) => void;
+    handleContentsChange: (contentType: keyof BT.BookDataType, newContent: string) => void;
     contentType: BT.EditorContentType;
     onClose: () => void;
     isOpen: boolean;
     editorTitle: string;
-    setLoading?: (txt: string) => void;
+    gptButton?: boolean;
     loadable?: boolean;
+    placeHolderText?: string;
 }
 
 const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
@@ -31,8 +32,9 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     onClose,
     isOpen,
     editorTitle,
-    setLoading,
+    gptButton,
     loadable,
+    placeHolderText,
 }) => {
     const navigate = useNavigate();
     const { token, setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
@@ -42,30 +44,72 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }
     const [isStoppedGpt, setIsStoppedGpt] = useState<boolean>(false);
     const [currentWS, setCurrentWS] = useState<WebSocket | null>(null);
-    const [tailwindDefaultCss, setTailwindDefaultCss] = useState<string | null>(null);
-    const [markdownCss, setMarkdownCss] = useState<string | null>(null);
+    const [tailwindDefaultCss, setTailwindDefaultCss] = useState<string>('');
     const contentRef = useRef<HTMLDivElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [markdownContent, setMarkdownContent] = useState<string>("");
-
-    const fetchCss = async () => {
-        try {
-            let res = await fetch('/tailwind_output.css');
-            const twDefaultCss = await res.text();
-            setTailwindDefaultCss(twDefaultCss);
-            res = await fetch('/md.css');
-            const mdCss = await res.text();
-            setMarkdownCss(mdCss);
-        } catch (error) {
-            console.error('Failed to fetch CSS:', error);
-        }
-    };
+    const [cssEditorVisible, setCssEditorVisible] = useState(false);
+    const [cssContent, setCssContent] = useState("");
 
     useEffect(() => {
-        fetchCss();
-    }, []);
+        appliesToIframe();
+    }, [markdownContent, cssContent]);
 
     useEffect(() => {
+        setMarkdownContent(bookData[contentType] || '');
+    }, [bookData[contentType]]);
+
+    useEffect(() => {
+        setCssContent(bookData.defaultStyle || '');
+    }, [bookData.defaultStyle])
+
+    const reactMarkdownComponentsTw: Components = {
+        h1: ({ node, ...props }) => <h1 className="text-blue-900 font-bold text-[60pt] my-6" {...props} />,
+        h2: ({ node, ...props }) => <h2 className="text-2xl font-bold text-left border-b-4 border-blue-800 pt-4 pb-1 my-6" {...props} >
+            <span className="bg-yellow-200 text-blue-800 font-bold text-[30pt] inline-block p-2">{props.children}</span>
+        </h2>,
+        h3: ({ node, ...props }) => <h3 className="text-xl font-medium text-left border-b-4 border-blue-800 pt-4 pb-1 my-4" {...props}>
+            <span className="text-blue-800 font-bold text-xl">{props.children}</span>
+        </h3>,
+        h4: ({ node, ...props }) => <h4 className="text-lg font-medium text-left border-b-2 border-blue-800 pt-4 pb-1 my-4" {...props}>
+            <span className="text-blue-800">{props.children}</span>
+        </h4>,
+        p: ({ node, ...props }) => <p className="text-base leading-relaxed my-2" {...props} />,
+        a: ({ node, ...props }) => <a className="text-blue-600 hover:underline" {...props} />,
+        ul: ({ node, ...props }) => <ul className="list-disc list-inside my-4" {...props} />,
+        ol: ({ node, ...props }) => <ol className="list-decimal list-inside my-4" {...props} />,
+        li: ({ node, ...props }) => <li className="my-1" {...props} />,
+        blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4" {...props} />,
+        pre: ({ node, ...props }) => <pre className="bg-gray-100 rounded p-4 my-4 overflow-x-auto" {...props} />,
+        code: ({ node, ...props }) => <code className="bg-gray-100 p-1 rounded" {...props} />,
+        table: ({ node, ...props }) => <table className="table-auto border-collapse border border-gray-400 my-4" {...props} />,
+        thead: ({ node, ...props }) => <thead className="bg-gray-200" {...props} />,
+        tr: ({ node, ...props }) => <tr className="border-t border-gray-300" {...props} />,
+        th: ({ node, ...props }) => <th className="border px-4 py-2" {...props} />,
+        td: ({ node, ...props }) => <td className="border px-4 py-2" {...props} />,
+    }
+
+    const reactMarkdownComponents: Components = {
+        h1: ({ node, ...props }) => <h1 {...props} />,
+        h2: ({ node, ...props }) => <h2 {...props} ><span>{props.children}</span></h2>,
+        h3: ({ node, ...props }) => <h3 {...props}><span>{props.children}</span></h3>,
+        h4: ({ node, ...props }) => <h4 {...props}><span>{props.children}</span></h4>,
+        p: ({ node, ...props }) => <p {...props} />,
+        a: ({ node, ...props }) => <a {...props} />,
+        ul: ({ node, ...props }) => <ul {...props} />,
+        ol: ({ node, ...props }) => <ol {...props} />,
+        li: ({ node, ...props }) => <li {...props} />,
+        blockquote: ({ node, ...props }) => <blockquote {...props} />,
+        pre: ({ node, ...props }) => <pre {...props} />,
+        code: ({ node, ...props }) => <code {...props} />,
+        table: ({ node, ...props }) => <table {...props} />,
+        thead: ({ node, ...props }) => <thead {...props} />,
+        tr: ({ node, ...props }) => <tr {...props} />,
+        th: ({ node, ...props }) => <th {...props} />,
+        td: ({ node, ...props }) => <td {...props} />,
+    }
+
+    const appliesToIframe = () => {
         if (iframeRef.current) {
             const iframeDocument = iframeRef.current.contentDocument;
             if (iframeDocument) {
@@ -83,11 +127,12 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                 // iframe内のHTMLを更新
                 iframeDocument.open();
                 iframeDocument.write(`
-              <html>
+              <html lang="ja">
                 <head>
+                    <meta charset="UTF-8">
                     <!-- <link rel="stylesheet" href="https://unpkg.com/tailwindcss@2.0.0/dist/tailwind.min.css" /> -->
                 </head>
-                <style>${markdownCss}</style>
+                <style>${cssContent}</style>
                 <body>
                   <div class="prose" id="all-wrapper">
                     ${renderedMarkdown}
@@ -98,7 +143,19 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                 iframeDocument.close();
             }
         }
-    }, [markdownContent]);
+    }
+
+    const getCss = async () => {
+        try {
+            let res = await fetch('/default_md.css');
+            const mdCss = await res.text();
+            res = await fetch('/hljs_1.css');
+            const hljsCss = await res.text();
+            handleContentsChange('defaultStyle', mdCss + '\n' + hljsCss);
+        } catch (error) {
+            console.error('Failed to fetch CSS:', error);
+        }
+    };
 
     const formatMarkdownText = (text: string): string => {
         // バックスラッシュでエスケープされた\nを実際の改行に置き換える
@@ -119,12 +176,12 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }
 
     const runGpt = async () => {
-        if (!setLoading) return alert("Can't Run GPT");
+        if (!gptButton) return alert("Can't Run GPT");
         const confirmMessage = `Do you run GPT?`;
         if (!window.confirm(confirmMessage)) { return; }
 
         try {
-            setLoading(`GPT Running...`);
+            setLoadingTxt(`GPT Running...`);
 
             switch (contentType) {
                 case 'toc': {
@@ -166,7 +223,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                             const data: OT.WSResGptType = JSON.parse(event.data);
                             gptResult += data.gptResult ? data.gptResult : '';
                             handleContentsChange(contentType, gptResult);
-                            setLoading(`GPT Running... ${data.gptProgress ? data.gptProgress : ''}`);
+                            setLoadingTxt(`GPT Running... ${data.gptProgress ? data.gptProgress : ''}`);
                             if (data.status === 'finished') {
                                 alert('GPT Output Successfully!');
                                 ws.close();
@@ -207,16 +264,16 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         } catch (e) {
             alert('Failed GPT Output. Please try again.');
         } finally {
-            setLoading('');
+            setLoadingTxt('');
         }
     }
 
     const loadTemporaryGpt = async () => {
-        if (!setLoading || !bookData.id) { return alert("Can't Run GPT.") };
-        const confirmMessage = `Load previous GPT output?`;
-        if (!window.confirm(confirmMessage)) { return; }
+        if (!gptButton || !bookData.id) { return alert("Can't Run GPT.") };
         try {
-            setLoading(`GPT Loading...`);
+            const confirmMessage = `Load previous GPT output?`;
+            if (!window.confirm(confirmMessage)) { return; }
+            setLoadingTxt(`GPT Loading...`);
             const res: AxiosResponse<BT.TemporaryGptType> = await axios.get<BT.TemporaryGptType>(API_ENDPOINTS.getTemporaryGpt(bookData.id));
             const temporaryGpt = res.data.temporaryGpt;
             if (!temporaryGpt) { return alert('There is no content.'); }
@@ -227,7 +284,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         } catch (e) {
             alert('Failed GPT Output. Please try again.');
         } finally {
-            setLoading('');
+            setLoadingTxt('');
         }
     }
 
@@ -241,32 +298,6 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             count: 2,
         }
         currentWS && currentWS.send(JSON.stringify(reqBodyGpt));
-    }
-
-    const reactMarkdownComponents: Components = {
-        h1: ({ node, ...props }) => <h1 className="text-blue-900 font-bold text-[60pt] my-6" {...props} />,
-        h2: ({ node, ...props }) => <h2 className="text-2xl font-bold text-left border-b-4 border-blue-800 pt-4 pb-1 my-6" {...props} >
-            <span className="bg-yellow-200 text-blue-800 font-bold text-[30pt] inline-block p-2">{props.children}</span>
-        </h2>,
-        h3: ({ node, ...props }) => <h3 className="text-xl font-medium text-left border-b-4 border-blue-800 pt-4 pb-1 my-4" {...props}>
-            <span className="text-blue-800 font-bold text-xl">{props.children}</span>
-        </h3>,
-        h4: ({ node, ...props }) => <h4 className="text-lg font-medium text-left border-b-2 border-blue-800 pt-4 pb-1 my-4" {...props}>
-            <span className="text-blue-800">{props.children}</span>
-        </h4>,
-        p: ({ node, ...props }) => <p className="text-base leading-relaxed my-2" {...props} />,
-        a: ({ node, ...props }) => <a className="text-blue-600 hover:underline" {...props} />,
-        ul: ({ node, ...props }) => <ul className="list-disc list-inside my-4" {...props} />,
-        ol: ({ node, ...props }) => <ol className="list-decimal list-inside my-4" {...props} />,
-        li: ({ node, ...props }) => <li className="my-1" {...props} />,
-        blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4" {...props} />,
-        pre: ({ node, ...props }) => <pre className="bg-gray-100 rounded p-4 my-4 overflow-x-auto" {...props} />,
-        code: ({ node, ...props }) => <code className="bg-gray-100 p-1 rounded" {...props} />,
-        table: ({ node, ...props }) => <table className="table-auto border-collapse border border-gray-400 my-4" {...props} />,
-        thead: ({ node, ...props }) => <thead className="bg-gray-200" {...props} />,
-        tr: ({ node, ...props }) => <tr className="border-t border-gray-300" {...props} />,
-        th: ({ node, ...props }) => <th className="border px-4 py-2" {...props} />,
-        td: ({ node, ...props }) => <td className="border px-4 py-2" {...props} />,
     }
 
     const downloadMarkdown = () => {
@@ -328,29 +359,22 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         try {
             const confirmMessage = `Download this html?`;
             if (!window.confirm(confirmMessage)) { return; }
-            if (contentRef.current) {
-                const htmlContent = contentRef.current.innerHTML;
-                const cssContent = await extractCSS();
-                const fullHtml = `
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<style>${tailwindDefaultCss + cssContent}</style>
-</head>
-<body>
-<div class="container flex justify-center mx-auto">
-${htmlContent}
-</div>
-</body>
-</html>
-`;
-                const blob = new Blob([fullHtml], { type: 'text/html' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `${bookData.title}_${contentType}.html`;
-                link.click();
-                URL.revokeObjectURL(link.href);
-                setSuccessMessage('Successfully html file download!')
+            if (iframeRef.current) {
+                // const htmlContent = contentRef.current.innerHTML;
+                // const cssContent = await extractCSS();
+                // iframeのcontentDocumentを取得
+                const iframeDocument = iframeRef.current.contentDocument;
+                if (iframeDocument) {
+                    // iframe内のHTMLを取得
+                    const iframeContent = iframeDocument.documentElement.outerHTML;
+                    const blob = new Blob([iframeContent], { type: 'text/html' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `${bookData.title}_${contentType}.html`;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                    setSuccessMessage('Successfully html file download!')
+                }
             }
         } catch (error) {
             setErrorMessage("Failed to download");
@@ -470,11 +494,35 @@ ${htmlContent}
         }
     }
 
+    const handleToggleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setCssEditorVisible(e.target.checked);
+    };
+
+    const resetCss = async () => {
+        try {
+            setLoadingTxt('CSS Resetting...');
+            const confirmMessage = `Reset css?`;
+            if (!window.confirm(confirmMessage)) { return; }
+            await getCss();
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingTxt('');
+        }
+    }
+
+    const handleChangeCss = (value: string) => {
+        handleContentsChange('defaultStyle', value);
+        setCssContent(value);
+    }
+
     return (
         <>
             <div className={`fixed m-0 top-0 right-0 h-full w-full bg-white shadow-lg z-20 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                <div className="p-4 flex justify-between items-center border-b">
-                    <h2 className="text-xl font-bold">{editorTitle}</h2>
+                <div className="p-3 flex justify-between items-center border-b">
+                    <div className="flex">
+                        <h2 className="text-xl font-bold mr-2">{editorTitle}</h2>
+                    </div>
                     <div className="space-x-2">
                         {/* Todo: まずはhtmlでいい。その後epubが必要なら作る。 */}
                         {/* {loadable && (
@@ -485,6 +533,14 @@ ${htmlContent}
                                 DL-epub(β)
                             </button>
                         )} */}
+                        {cssEditorVisible && (
+                            <button
+                                onClick={resetCss}
+                                className="bg-blue-500 text-white px-3 py-1 rounded w-16"
+                            >
+                                Reset
+                            </button>
+                        )}
                         <button
                             type="button"
                             onClick={handleHtmlDownload}
@@ -507,7 +563,7 @@ ${htmlContent}
                                 Load
                             </button>
                         )}
-                        {setLoading && (
+                        {gptButton && (
                             <button
                                 onClick={runGpt}
                                 className="bg-emerald-500 text-white px-3 py-1 rounded w-16"
@@ -524,17 +580,42 @@ ${htmlContent}
                     </div>
                 </div>
 
-                <div className="flex flex-col p-4 h-full md:flex-row">
-                    <div className="w-full md:w-1/2 pr-2 h-full">
+                <div className="h-8 flex items-center p-4 pl-5">
+                    <label className="inline-flex items-center cursor-pointer">
+                        <input
+                            type="checkbox"
+                            value=""
+                            className="sr-only peer"
+                            onChange={handleToggleChange}
+                            checked={cssEditorVisible}
+                        />
+                        <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        <span className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">CSS Editor</span>
+                    </label>
+                </div>
+
+                <div className="flex flex-col pl-4 pr-4 pb-4 pt-1 h-full md:flex-row">
+                    <div className="w-full md:w-1/2 pr-2 h-full relative">
                         <textarea
                             name="markdown"
-                            placeholder="Markdown content"
+                            placeholder={`${placeHolderText ? placeHolderText : "Markdown content"}`}
                             onChange={handleInputChange}
                             value={bookData[contentType]}
-                            className="w-full h-[93%] p-2 border border-gray-300 rounded"
+                            className="w-full h-[91%] p-2 border border-gray-300 rounded"
                         ></textarea>
+
+                        {cssEditorVisible && (
+                            <textarea
+                                name="cssEditor"
+                                placeholder="CSS content"
+                                onChange={(e) => handleChangeCss(e.target.value)}
+                                value={bookData.defaultStyle}
+                                className="absolute top-0 -left-1 z-30 w-[calc(100%-0.25rem)] h-[91%] p-2 pr-0 border border-gray-300 rounded"
+                            ></textarea>
+                        )}
                     </div>
-                    <div className="w-full md:w-1/2 pl-2 h-[93%] overflow-auto p-2 border border-gray-300 rounded max-w-none">
+
+                    <div className="w-full md:w-1/2 pl-2 h-[91%] overflow-auto p-2 border border-gray-300 rounded max-w-none">
                         {/* <div ref={contentRef}>
                             <ReactMarkdown
                                 className="prose w-full"
@@ -545,7 +626,7 @@ ${htmlContent}
                                 {markdownContent}
                             </ReactMarkdown>
                         </div> */}
-                        <iframe ref={iframeRef} className="w-full h-full border border-gray-300 rounded"></iframe>
+                        <iframe ref={iframeRef} className="w-full h-full border-gray-300 rounded"></iframe>
                     </div>
                 </div>
             </div >

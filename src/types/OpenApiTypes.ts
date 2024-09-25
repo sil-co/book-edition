@@ -42,8 +42,3 @@ export interface GptImageReqBody extends GptImageReq {
     title: string;
     contentType: ContentType;
 }
-
-export interface ResultUploadCoverType {
-    message: string;
-    fileName: string;
-}

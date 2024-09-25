@@ -34,11 +34,10 @@ const AppContent = () => {
         setSuccessMessage,
         setWarningMessage,
         setImageModalSrc,
-        token,
         setToken,
     } = useGlobalState();
 
-    const closeModal = () => { setImageModalSrc(''); };
+    const closeImageModal = () => { setImageModalSrc(''); };
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -76,7 +75,7 @@ const AppContent = () => {
             {successMessage && <SuccessModal successMessage={successMessage} />}
             {warningMessage && <WarningModal warningMessage={warningMessage} />}
             {errorMessage && <ErrorModal errorMessage={errorMessage} />}
-            {imageModalSrc && <ImageModal closeModal={closeModal} imageModalSrc={imageModalSrc} />}
+            {imageModalSrc && <ImageModal closeModal={closeImageModal} imageModalSrc={imageModalSrc} />}
             {loadingTxt && <Loading loadingTxt={loadingTxt} />}
         </>
     );
@@ -87,7 +86,7 @@ const App = () => {
     return (
         <GlobalStateProvider>
             <Router>
-                <nav className="bg-gray-900 p-4 text-white shadow-lg fixed w-full top-0">
+                <nav className="bg-gray-900 p-4 text-white shadow-lg fixed w-full top-0 z-20">
                     <div className="container mx-auto flex justify-between items-center">
                         <div className="text-lg font-bold">
                             <Link to="/">Auto Writing</Link>
@@ -117,7 +116,6 @@ const App = () => {
                         </ul>
                     </div>
                 </nav>
-
                 <div className="">
                     <AppContent />
                 </div>

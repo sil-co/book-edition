@@ -6,7 +6,7 @@ import * as BT from '../../types/BookTypes';
 
 interface EditorEditorProps {
     bookData: BT.BookDataType;
-    handleContentsChange: (contentType: string, newContent: string) => void;
+    handleContentsChange: (contentType: keyof BT.BookDataType, newContent: string) => void;
     contentType: BT.EditorContentType;
     onClose: () => void;
     isOpen: boolean;
@@ -318,7 +318,8 @@ const LazyImage: React.FC<LazyImageProps> = ({ src, defaultImage, alt }) => {
                 src={imageSrc || defaultImage}
                 alt={alt}
                 onError={handleError}
-                className="w-full h-48 hover:scale-105 transition-transform duration-300 ease-in-out object-contain w-40 h-64"
+                className="hover:scale-105 transition-transform duration-300 ease-in-out object-contain w-40 h-64"
+                loading='lazy'
             />
         </div>
     );

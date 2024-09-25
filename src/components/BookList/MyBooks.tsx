@@ -2,10 +2,12 @@ import axios, { AxiosResponse } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Link } from "react-router-dom";
 import { FiExternalLink } from 'react-icons/fi';
+import { FaSpinner } from 'react-icons/fa';
 
 import { useState, useEffect } from 'react';
 
 import { useGlobalState } from '../../context/GlobalStateProvider';
+import SelectModal from '../Modal/SelectModal';
 import { API_ENDPOINTS } from "../../api/urls";
 import * as BT from '../../types/BookTypes';
 
@@ -19,14 +21,22 @@ const MyBooks = () => {
     }
 
     const [books, setBooks] = useState<BT.BookDataType[]>([]);
+    const [isSelectModalOpen, setIsSelectModalOpen] = useState<boolean>(false);
+    const [selectedBookId, setSelectedBookId] = useState<string>('');
 
     useEffect(() => {
         axios.get<BT.BookDataType[]>(API_ENDPOINTS.getBooksInit(), {
             headers: { Authorization: `Bearer ${token}` },
         }).then((res) => {
-                setBooks(res.data);
-            });
+            const data = res.data;
+            console.log({ data })
+            setBooks(data);
+        });
     }, []);
+
+    useEffect(() => {
+        if (selectedBookId) { setIsSelectModalOpen(true); }
+    }, [selectedBookId])
 
     const handleOpenInNewTab = (url: string) => {
         if (!url) return;
@@ -48,6 +58,19 @@ const MyBooks = () => {
         }
     }
 
+    const toggleSelectModal = () => {
+        if (!isSelectModalOpen) {
+            setIsSelectModalOpen(true);
+        } else {
+            setIsSelectModalOpen(false);
+            setSelectedBookId('');
+        }
+    }
+
+    const handleBookId = (bookId: string) => {
+        setSelectedBookId(bookId);
+    }
+
     return (
         <div className="container mx-auto p-0 sm:p-4 flex flex-col items-end mt-12">
             <div className="container flex justify-center mx-auto p-0 sm:p-4">
@@ -56,7 +79,6 @@ const MyBooks = () => {
                         <h1 className="text-2xl font-bold mb-4">Book List</h1>
                         <Link to="/create" className="text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">New</Link>
                     </div>
-
                     <ul className="w-full space-y-4 mb-6">
                         {books.map((book) => (
                             <li
@@ -80,6 +102,21 @@ const MyBooks = () => {
                                         <FiExternalLink />
                                     </button>
                                 )}
+                                <button
+                                    type="button"
+                                    className={`text-white bg-lime-500  select-none
+                                        font-medium rounded-lg text-sm px-3 py-2 text-center
+                                        ${book.isGptRunning ? 'bg-gray-400 cursor-not-allowed' : 'bg-lime-500 hover:bg-lime-600'}
+                                    `}
+                                    disabled={book.isGptRunning}
+                                    onClick={() => handleBookId(book.id || '')}
+                                >
+                                    {book.isGptRunning ? (
+                                        <FaSpinner className="animate-spin inline-block " />
+                                    ) : (
+                                        'DL-zip'
+                                    )}
+                                </button>
                                 <Link
                                     to={book.isGptRunning ? "#" : `/edit/${book.id}`}
                                     onClick={(e) => book.isGptRunning && e.preventDefault()}
@@ -104,6 +141,11 @@ const MyBooks = () => {
                                         <span></span>
                                     </div>
                                 )}
+                                <SelectModal
+                                    selectedBookId={selectedBookId}
+                                    isOpen={isSelectModalOpen}
+                                    onClose={toggleSelectModal}
+                                />
                             </li>
                         ))}
                     </ul>

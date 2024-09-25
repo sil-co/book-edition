@@ -5,7 +5,7 @@ import { FaSpinner } from 'react-icons/fa';
 import { FiExternalLink } from 'react-icons/fi';
 import { FaAngleDoubleLeft } from "react-icons/fa";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import { useGlobalState } from '../../context/GlobalStateProvider';
 import HtmlEditor from '../Editor/HtmlEditor';
@@ -20,7 +20,7 @@ const EditBook = () => {
     const id = useParams().id;
     const navigate = useNavigate();
     const { token, setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
-    
+
     if (!token) {
         navigate("/login?error=unauthorized");
         return;
@@ -39,7 +39,6 @@ const EditBook = () => {
 
     const [editBookData, setEditBookData] = useState<BT.BookDataType>(initData);
     const [unEditedData, setUnEditedData] = useState<BT.BookDataType>(initData);
-
     const [isMdTocOpen, setIsMdTocOpen] = useState<boolean>(false);
     const [isMdBodyOpen, setIsMdBodyOpen] = useState<boolean>(false);
     const [isHtmlBodyOpen, setIsHtmlBodyOpen] = useState<boolean>(false);
@@ -47,73 +46,84 @@ const EditBook = () => {
     const [isHtmlUsageOpen, setIsHtmlUsageOpen] = useState<boolean>(false);
     const [isMdSummaryOpen, setIsMdSummaryOpen] = useState<boolean>(false);
     const [isImageEditorOpen, setIsImageEditorOpen] = useState<boolean>(false);
-
-    const [imagePreview, setImagePreview] = useState<string>('');
-    const [imageSelected, setImageSelected] = useState<string>('');
-
+    const [isSelectModalOpen, setIsSelectModalOpen] = useState<boolean>(false);
+    const [isIntroductionOpen, setIsIntroductionOpen] = useState<boolean>(false);
+    const [isAfterEndOpen, setIsAfterEndOpen] = useState<boolean>(false);
+    const [isOtherBooksOpen, setIsOtherBooksOpen] = useState<boolean>(false);
+    const [imagePreviewId, setImagePreviewId] = useState<string>('');
+    const [selectedImageId, setSelectedImageId] = useState<string>('');
     const [fileName, setFileName] = useState<string>('');
     const [dragActive, setDragActive] = useState<boolean>(false);
-
     const [isDisabled, setIsDisabled] = useState<boolean>(false);
+    const selectedImageRef = useRef<HTMLImageElement | null>(null);
+    const previewImageRef = useRef<HTMLImageElement | null>(null);
 
     useEffect(() => {
-        // console.log({ editBookData, unEditedData });
     }, [unEditedData]);
 
     useEffect(() => {
-        const setNewSelectedImage = async () => {
-            if (editBookData.coverImageId && editBookData.coverImageId.trim()) {
-                const data = await fetch(`${editBookData.coverImageId.trim()}`);
-                const blob = await data.blob();
-                const newImageSelected = URL.createObjectURL(blob);
-                URL.revokeObjectURL(imageSelected);
-                setImageSelected(newImageSelected);
-                const originalImageBuffer = await blob.arrayBuffer();
-                const newImageBuffer = await (await fetch(newImageSelected)).blob().then((b) => b.arrayBuffer());
-                if (originalImageBuffer.byteLength === newImageBuffer.byteLength &&
-                    new Uint8Array(originalImageBuffer).every((value, index) => value === new Uint8Array(newImageBuffer)[index])) {
-                    console.log("画像データが一致しています");
-                } else {
-                    console.log("画像データが一致していません");
-                }
-            }
-        }
-        setNewSelectedImage();
-    }, [editBookData]);
+        getBookData();
+    }, [id]);
 
     useEffect(() => {
-        const getBookData = async () => {
-            try {
-                setLoadingTxt('Loading...');
-                const isGpt: Boolean = await checkIsGpt(id);
-                if (isGpt) {
-                    setWarningMessage('Cannot display because GPT is still running.');
-                    await setTime(2000, () => navigate('/books'));
-                    return;
-                }
-                // const [_, res]: [void, AxiosResponse<BT.BookDataType>] = await Promise.all([
-                //     setTime(200),
-                //     axios.get<BT.BookDataType>(API_ENDPOINTS.getBook(id))
-                // ]);
-                const res: AxiosResponse<BT.BookDataType> = await axios.get<BT.BookDataType>(API_ENDPOINTS.getBook(id), { headers: { Authorization: `Bearer ${token}` } })
-                const data: BT.BookDataType = res.data;
-                setEditBookData(data);
-                setUnEditedData(data);
-            } catch (error) {
-                console.error("Failed to get bookData", error);
-                setErrorMessage(`Failed to get bookData.`);
-                setSuccessMessage(null);
-            } finally {
-                setLoadingTxt('');
-            }
-        };
+        if (imagePreviewId) { setNewPreviewImage(imagePreviewId); }
+    }, [imagePreviewId]);
 
-        getBookData();
-    }, [id]); // idが変わったらデータを再取得
+    useEffect(() => {
+        if (selectedImageId) { setNewSelectedImage(selectedImageId); }
+    }, [selectedImageId]);
+
+    const getBookData = async () => {
+        try {
+            setLoadingTxt('Loading...');
+            const isGpt: Boolean = await checkIsGpt(id);
+            if (isGpt) {
+                setWarningMessage('Cannot display because GPT is still running.');
+                await setTime(2000, () => navigate('/books'));
+                return;
+            }
+            const res: AxiosResponse<BT.BookDataType> = await axios.get<BT.BookDataType>(
+                API_ENDPOINTS.getBook(id),
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const data: BT.BookDataType = res.data;
+            setEditBookData(data);
+            setUnEditedData(data);
+            console.log({ ...data })
+            if (data.coverImageId) { setSelectedImageId(data.coverImageId); }
+        } catch (error) {
+            console.error("Failed to get bookData", error);
+            setErrorMessage(`Failed to get bookData.`);
+            setSuccessMessage(null);
+        } finally {
+            setLoadingTxt('');
+        }
+    };
+
+    const setNewSelectedImage = async (selectedImageId: string) => {
+        if (!selectedImageId) { return setErrorMessage("Cannot select") }
+        const res: AxiosResponse<BT.CoverImageData> = await axios.get<BT.CoverImageData>(API_ENDPOINTS.getCoverImage(selectedImageId));
+        const imagePath = res.data.imagePath || '';
+        // const fetchedImage = await fetch(imagePath);
+        // const blob = await fetchedImage.blob();
+        // const newImageSelected = URL.createObjectURL(blob);
+        // URL.revokeObjectURL(selectedImageId);
+        // setSelectedImageId(newImageSelected);
+        const newImagePath = `${imagePath}?t=${new Date().getTime()}`;
+        if (selectedImageRef.current) { selectedImageRef.current.src = newImagePath; }
+    }
+
+    const setNewPreviewImage = async (imagePreviewId: string) => {
+        if (!imagePreviewId) { return setErrorMessage("No preview image.") }
+        const res: AxiosResponse<BT.CoverImageData> = await axios.get<BT.CoverImageData>(API_ENDPOINTS.getCoverImage(imagePreviewId));
+        const imagePath = res.data.imagePath || '';
+        const newImagePath = `${imagePath}?t=${new Date().getTime()}`;
+        if (previewImageRef.current) { previewImageRef.current.src = newImagePath; }
+    }
 
     const isChangedCoverImage = async (): Promise<boolean> => {
         const originalImageBuffer = await (await fetch(unEditedData.coverImageId || '')).blob().then((b) => b.arrayBuffer());
-        const newImageBuffer = await (await fetch(imageSelected)).blob().then((b) => b.arrayBuffer());
+        const newImageBuffer = await (await fetch(selectedImageId)).blob().then((b) => b.arrayBuffer());
 
         if (
             originalImageBuffer.byteLength === newImageBuffer.byteLength &&
@@ -125,23 +135,28 @@ const EditBook = () => {
         }
     }
 
-    const uploadImage = async (): Promise<OT.ResultUploadCoverType | undefined> => {
-        if (!imageSelected) { return; }
-        let extension: string = getFileExtension(imageSelected);
+    const uploadImage = async (): Promise<BT.CoverImageData | undefined> => {
+        if (!selectedImageId) { return; }
+        let extension: string = getFileExtension(selectedImageId);
         if (!extension) { setErrorMessage('Invalid extension.'); return; }
         if (extension !== 'jpg' && extension !== 'png' && extension !== 'webp') { extension = 'jpg'; }
         const coverTitle = `${editBookData.title}_cover.${extension}`;
 
-        const data = await fetch(imageSelected);
+        const data = await fetch(selectedImageId);
         const blob = await data.blob();
         const formData = new FormData();
-        formData.append('coverImageId', blob, coverTitle);
+        formData.append('cover', blob, coverTitle);
 
-        const res: AxiosResponse<OT.ResultUploadCoverType> = await axios.post<OT.ResultUploadCoverType>(`${API_ENDPOINTS.uploadCoverImage()}`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
+        const res: AxiosResponse<BT.CoverImageData> = await axios.post<BT.CoverImageData>(
+            `${API_ENDPOINTS.uploadCoverImage()}`,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    Authorization: `Bearer ${token}`
+                },
             },
-        });
+        );
 
         return res.data;
     };
@@ -155,7 +170,7 @@ const EditBook = () => {
         return '';
     };
 
-    const textToDisplay = (name: string): string => {
+    const textToDisplay = (name: keyof BT.BookDataType | string): string => {
         switch (name) {
             case 'id':
                 return 'ID';
@@ -185,6 +200,12 @@ const EditBook = () => {
                 return 'URL(Kindle)';
             case 'isPublished':
                 return 'Published';
+            case 'defaultStyle':
+                return 'Style';
+            case 'introduction':
+                return 'Introduction';
+            case 'afterEnd':
+                return 'AfterEnd';
             case 'publishedAt':
                 return 'Published_At';
             default:
@@ -249,11 +270,11 @@ const EditBook = () => {
             // propertyがidのみの場合
             const keys = Object.keys(extractedData).filter(key => key !== 'id');
             const keysToDisplay: string[] = keys.map(key => textToDisplay(key));
-            const isChangedCover = await isChangedCoverImage();
-            if (keys.length === 0 && !isChangedCover) { return setWarningMessage("WARNING: Not Edited"); }
+            // const isChangedCover = await isChangedCoverImage();
+            if (keys.length === 0) { return setWarningMessage("WARNING: Not Edited"); }
 
             let confirmMessage = `Are you sure update? \n Update fields: \n ${keysToDisplay.join(', ')}`;
-            if (isChangedCover) { confirmMessage += 'Book Cover'; }
+            // if (isChangedCover) { confirmMessage += 'Book Cover'; }
             if (!window.confirm(confirmMessage)) { return; }
 
             const isGpt: Boolean = await checkIsGpt(id);
@@ -271,13 +292,6 @@ const EditBook = () => {
                     [key]: res.data[key as keyof BT.BookDataType]
                 }));
             });
-            if (isChangedCover) {
-                const resCover: OT.ResultUploadCoverType | undefined = await uploadImage();
-                setUnEditedData((prev) => ({
-                    ...prev,
-                    coverImageId: `${BASE_URL}${resCover?.fileName}`,
-                }));
-            }
 
             setSuccessMessage(`${res.data.title} Updated Successfully! `);
         } catch (e) {
@@ -286,6 +300,14 @@ const EditBook = () => {
             setIsDisabled(false);
         }
     };
+
+    const toggleIntroductionEditor = () => {
+        if (!isIntroductionOpen) {
+            setIsIntroductionOpen(true);
+        } else {
+            setIsIntroductionOpen(false);
+        }
+    }
 
     const toggleMdTocEditor = () => {
         if (!isMdTocOpen) {
@@ -432,11 +454,34 @@ const EditBook = () => {
     }
 
     const toggleImageEditor = () => {
-        console.log('Image Editor')
         if (!isImageEditorOpen) {
             setIsImageEditorOpen(true);
         } else {
             setIsImageEditorOpen(false);
+        }
+    }
+
+    const toggleSelectModal = () => {
+        if (!isSelectModalOpen) {
+            setIsSelectModalOpen(true);
+        } else {
+            setIsSelectModalOpen(false);
+        }
+    }
+
+    const toggleAfterEndEditor = () => {
+        if (!isAfterEndOpen) {
+            setIsAfterEndOpen(true);
+        } else {
+            setIsAfterEndOpen(false);
+        }
+    }
+
+    const toggleOtherBooksEditor = () => {
+        if (!isOtherBooksOpen) {
+            setIsOtherBooksOpen(true);
+        } else {
+            setIsOtherBooksOpen(false);
         }
     }
 
@@ -448,7 +493,7 @@ const EditBook = () => {
         }));
     };
 
-    const handleContentsChange = (contentType: string, newContent: string) => {
+    const handleContentsChange = (contentType: keyof BT.BookDataType, newContent: string) => {
         setEditBookData((prev) => ({
             ...prev,
             [contentType]: newContent,
@@ -498,36 +543,26 @@ const EditBook = () => {
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
 
-            setFileName(file.name);
-
             // プレビューURLを解放してから新しく設定
-            if (imagePreview) {
-                URL.revokeObjectURL(imagePreview);
-            }
+            // if (imagePreviewId) {
+            //     URL.revokeObjectURL(imagePreviewId);
+            // }
 
             const filePreview = URL.createObjectURL(file);
-            setImagePreview(filePreview);
-            // console.log({filePreview})
-            // setImagesData((prev) => ({
-            //     ...prev,
-            //     imagePreview: filePreview,
-            //     imagePreviewPath: filePreview,
-            // }))
+            await uploadPreviewImage(filePreview);
         }
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const file = e.target.files[0];
 
-            // 既存のプレビューURLを解放
-            if (imagePreview) {
-                URL.revokeObjectURL(imagePreview);
-            }
+            // if (imagePreviewId) {
+            //     URL.revokeObjectURL(imagePreviewId);
+            // }
 
-            // 新しいプレビューURLを生成
             const filePreview = URL.createObjectURL(file);
-            setImagePreview(filePreview);
+            await uploadPreviewImage(filePreview);
         }
     };
 
@@ -536,15 +571,55 @@ const EditBook = () => {
         window.open(url, '_blank', 'noopener,noreferrer'); // 別タブで開く
     };
 
+    const uploadPreviewImage = async (filePreview: string): Promise<BT.CoverImageData | undefined> => {
+        if (!filePreview) { return; }
+        let extension: string = getFileExtension(filePreview);
+        if (!extension) { setErrorMessage('Invalid extension.'); return; }
+        if (extension !== 'jpg' && extension !== 'png' && extension !== 'webp') { extension = 'jpg'; }
+        const coverTitle = `${editBookData.title}_cover.${extension}`;
+
+        const data = await fetch(filePreview);
+        const blob = await data.blob();
+        const formData = new FormData();
+        formData.append('cover', blob, coverTitle);
+
+        const res: AxiosResponse<BT.CoverImageData> = await axios.post<BT.CoverImageData>(
+            `${API_ENDPOINTS.uploadCoverImage()}`,
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    Authorization: `Bearer ${token}`
+                },
+            },
+        );
+        setImagePreviewId(res.data.id);
+
+        // if (previewImageRef.current) {
+        //     // const data = await fetch(previewImageRef.current.src);
+        //     // const blob = await data.blob();
+        //     // const copyImagePreview = URL.createObjectURL(blob);
+        //     // URL.revokeObjectURL(previewImageRef.current.src);
+        //     // previewImageRef.current.src = res.data.imagePath;
+        //     const newImagePath = `${res.data.imagePath}?t=${new Date().getTime()}`;
+        //     previewImageRef.current.src = newImagePath;
+        // }
+        setSuccessMessage('The image was uploaded.');
+    }
+
     const usePreviewImage = async (e: React.MouseEvent<HTMLImageElement>) => {
         e.preventDefault();
-        if (!imagePreview) { return setErrorMessage('No image selected'); }
-        const response = await fetch(imagePreview);
-        const blob = await response.blob();
-        const copyImagePreview = URL.createObjectURL(blob);
-        setImageSelected(copyImagePreview);
-        URL.revokeObjectURL(imagePreview);
-        setImagePreview('');
+        if (!imagePreviewId) { return setErrorMessage('No image selected'); }
+        // const data = await fetch(imagePreviewId);
+        // const blob = await data.blob();
+        // const copyImagePreview = URL.createObjectURL(blob);
+        // URL.revokeObjectURL(imagePreviewId);
+        setEditBookData((prev) => ({
+            ...prev,
+            coverImageId: imagePreviewId,
+        }));
+        setSelectedImageId(imagePreviewId);
+        setImagePreviewId('');
     }
 
     const getFileExtension = (url: string): string => {
@@ -555,15 +630,14 @@ const EditBook = () => {
     const handleDownloadClick = async () => {
         if (!window.confirm(`Download selected image?`)) { return; }
         try {
-            let extension: string = getFileExtension(imageSelected);
+            let extension: string = getFileExtension(selectedImageId);
             if (!extension) { return setErrorMessage('Invalid extension.'); }
             if (extension !== 'jpg' && extension !== 'png' && extension !== 'webp') { extension = 'jpg'; }
-            const response = await fetch(imageSelected);
+            const response = await fetch(selectedImageId);
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = blobUrl;
-
             link.download = `${editBookData.title}_cover.${extension}`;
             document.body.appendChild(link);
             link.click();
@@ -590,11 +664,10 @@ const EditBook = () => {
             }
             const res: AxiosResponse<string> = await axios.post<string>(API_ENDPOINTS.generateImageCoverGpt(), gptImageReqBody);
             const data = await fetch(`${BASE_URL}${res.data}`);
-            console.log(res.data)
             const blob = await data.blob();
             const newImagePreview = URL.createObjectURL(blob);
-            URL.revokeObjectURL(imagePreview);
-            setImagePreview(newImagePreview);
+            URL.revokeObjectURL(imagePreviewId);
+            setImagePreviewId(newImagePreview);
             setErrorMessage('Output Image for GPT Successfully!');
         } catch (e) {
             setErrorMessage('Failed GPT Output. Please try again.');
@@ -604,19 +677,13 @@ const EditBook = () => {
     }
 
     const setSampleImageOnPreview = async () => {
-        const data = await fetch(`${BASE_SAMPLE_URL}`);
-        const blob = await data.blob();
-        const newImagePreview = URL.createObjectURL(blob);
-        URL.revokeObjectURL(imagePreview);
-        setImagePreview(newImagePreview);
+        // setImagePreviewId('');
+        if (previewImageRef.current) { previewImageRef.current.src = BASE_SAMPLE_URL; }
     }
 
     const setSampleImageOnSelected = async () => {
-        const data = await fetch(`${BASE_SAMPLE_URL}`);
-        const blob = await data.blob();
-        const newImagePreview = URL.createObjectURL(blob);
-        URL.revokeObjectURL(imageSelected);
-        setImageSelected(newImagePreview);
+        // setSelectedImageId('');
+        if (selectedImageRef.current) { selectedImageRef.current.src = BASE_SAMPLE_URL; }
     }
 
     const setTime = async (time: number, callback?: () => void): Promise<void> => {
@@ -687,6 +754,38 @@ const EditBook = () => {
                             className="w-full p-2 border border-gray-300 rounded"
                             disabled={isDisabled}
                         />
+                    </div>
+                    <div className="relative">
+                        <label htmlFor="introduction" className="block text-sm font-medium text-gray-700 mb-1">
+                            Introduction
+                        </label>
+                        <textarea
+                            id="introduction"
+                            name="introduction"
+                            placeholder="introduction"
+                            onChange={handleInputChange}
+                            value={editBookData.introduction || ''}
+                            className="hidden"
+                            disabled={isDisabled}
+                        ></textarea>
+                        <span className="group">
+                            <button
+                                type="button"
+                                onClick={toggleIntroductionEditor}
+                                className={`relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 dark:text-white group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:hover:text-gray-900
+            focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400
+            ${isDisabled && "cursor-not-allowed"}`}
+                                disabled={isDisabled}
+                            >
+                                <span className="inline-block w-48 relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                                    {isDisabled ? (
+                                        <FaSpinner className="animate-spin inline-block" />
+                                    ) : (
+                                        'Open Markdown Editor'
+                                    )}
+                                </span>
+                            </button>
+                        </span>
                     </div>
                     <div>
                         <label htmlFor="toc" className="block text-sm font-medium text-gray-700 mb-1">
@@ -864,16 +963,18 @@ const EditBook = () => {
                         <div className="flex mt-0 space-x-4" >
                             <div
                                 className={`relative first:mt-0 w-40 h-40 bg-gray-100 rounded-md flex items-center justify-center
-                                    ${imageSelected ? 'border-2 border-green-500' : 'border border-gray-300'}
+                                    ${selectedImageId ? 'border-2 border-green-500' : 'border border-gray-300'}
                                 `}>
-                                {imageSelected ? (
+                                {selectedImageId ? (
                                     <>
                                         <img
-                                            src={imageSelected}
+                                            src={selectedImageId}
                                             alt="Selected"
                                             className="w-full h-full object-contain cursor-pointer rounded"
                                             onClick={handleImageClick}
                                             onError={setSampleImageOnSelected}
+                                            loading='lazy'
+                                            ref={selectedImageRef}
                                         />
                                         <span className="absolute bottom-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-5 text-yellow-400 underline text-lg font-semibold  pointer-events-none">
                                             Now selected
@@ -954,14 +1055,16 @@ const EditBook = () => {
                                 </div>
                             </div>
                             <div className="relative first:mt-0 w-40 h-40 bg-gray-100 border border-gray-300 rounded-md flex items-center justify-center">
-                                {imagePreview ? (
+                                {imagePreviewId ? (
                                     <>
                                         <img
-                                            src={imagePreview}
+                                            src={imagePreviewId}
                                             alt="Preview"
                                             className="w-full h-full object-contain cursor-pointer rounded"
                                             onClick={handleImageClick}
                                             onError={setSampleImageOnPreview}
+                                            loading='lazy'
+                                            ref={previewImageRef}
                                         />
                                         <span className="absolute bottom-0 left-0 w-full h-full flex items-center underline justify-center bg-black bg-opacity-5 text-yellow-400 text-lg font-semibold pointer-events-none">
                                             Preview
@@ -1008,36 +1111,101 @@ const EditBook = () => {
                             disabled={isDisabled}
                         />
                     </div>
-                    <div>
+                    <div className="relative">
                         <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-1">
                             Summary
                         </label>
                         <textarea
                             id="summary"
                             name="summary"
-                            placeholder="Summary"
+                            placeholder="summary"
                             onChange={handleInputChange}
                             value={editBookData.summary || ''}
                             className="hidden"
                             disabled={isDisabled}
                         ></textarea>
-                        <button
-                            type="button"
-                            onClick={toggleMdSummaryEditor}
-                            className={`relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 dark:text-white group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:hover:text-gray-900
-                                focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400
-                                ${isDisabled && "cursor-not-allowed"}
-                            `}
+                        <span className="group">
+                            <button
+                                type="button"
+                                onClick={toggleMdSummaryEditor}
+                                className={`relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 dark:text-white group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:hover:text-gray-900
+            focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400
+            ${isDisabled && "cursor-not-allowed"}`}
+                                disabled={isDisabled}
+                            >
+                                <span className="inline-block w-48 relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                                    {isDisabled ? (
+                                        <FaSpinner className="animate-spin inline-block" />
+                                    ) : (
+                                        'Open Markdown Editor'
+                                    )}
+                                </span>
+                            </button>
+                        </span>
+                    </div>
+                    <div className="relative">
+                        <label htmlFor="afterEnd" className="block text-sm font-medium text-gray-700 mb-1">
+                            AfterEnd
+                        </label>
+                        <textarea
+                            id="afterEnd"
+                            name="afterEnd"
+                            placeholder="afterEnd"
+                            onChange={handleInputChange}
+                            value={editBookData.afterEnd || ''}
+                            className="hidden"
                             disabled={isDisabled}
-                        >
-                            <span className="inline-block w-48 relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
-                                {isDisabled ? (
-                                    <FaSpinner className="animate-spin inline-block" />
-                                ) : (
-                                    'Open Markdown Editor'
-                                )}
-                            </span>
-                        </button>
+                        ></textarea>
+                        <span className="group">
+                            <button
+                                type="button"
+                                onClick={toggleAfterEndEditor}
+                                className={`relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 dark:text-white group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:hover:text-gray-900
+            focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400
+            ${isDisabled && "cursor-not-allowed"}`}
+                                disabled={isDisabled}
+                            >
+                                <span className="inline-block w-48 relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                                    {isDisabled ? (
+                                        <FaSpinner className="animate-spin inline-block" />
+                                    ) : (
+                                        'Open Markdown Editor'
+                                    )}
+                                </span>
+                            </button>
+                        </span>
+                    </div>
+                    <div className="relative">
+                        <label htmlFor="otherBooks" className="block text-sm font-medium text-gray-700 mb-1">
+                            OtherBooks
+                        </label>
+                        <textarea
+                            id="otherBooks"
+                            name="otherBooks"
+                            placeholder="otherBooks"
+                            onChange={handleInputChange}
+                            value={editBookData.otherBooks || ''}
+                            className="hidden"
+                            disabled={isDisabled}
+                        ></textarea>
+                        <span className="group">
+                            <button
+                                type="button"
+                                onClick={toggleOtherBooksEditor}
+                                className={`relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 dark:text-white group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:hover:text-gray-900
+            focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400
+            ${isDisabled && "cursor-not-allowed"}`}
+                                disabled={isDisabled}
+                            >
+                                <span className="inline-block w-48 relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                                    {isDisabled ? (
+                                        <FaSpinner className="animate-spin inline-block" />
+                                    ) : (
+                                        'Open Markdown Editor'
+                                    )}
+                                </span>
+                            </button>
+                        </span>
                     </div>
                     <div className="flex items-center">
                         <input
@@ -1085,7 +1253,7 @@ const EditBook = () => {
                             'Update'
                         )}
                     </button>
-                    <button
+                    {/* <button
                         type="button"
                         className={`w-16 text-white bg-lime-500 h-10 select-none
                             font-medium rounded-lg text-sm px-3 py-2.5 text-center me-2 mb-2 min-w-[90px]
@@ -1098,48 +1266,60 @@ const EditBook = () => {
                         ) : (
                             'DL-epub'
                         )}
-                    </button>
-                    <button
+                    </button> */}
+                    {/* <button
                         type="button"
                         className={`w-16 text-white bg-lime-500 h-10 select-none
                             font-medium rounded-lg text-sm px-3 py-2.5 text-center me-2 mb-2 min-w-[90px]
                             ${isDisabled ? '' : 'hover:bg-gradient-to-bl'}
                         `}
                         disabled={isDisabled}
+                        onClick={toggleSelectModal}
                     >
                         {isDisabled ? (
                             <FaSpinner className="animate-spin inline-block" />
                         ) : (
                             'DL-html'
                         )}
-                    </button>
+                    </button> */}
                 </form>
             </div >
 
             <MarkdownEditor
                 bookData={editBookData}
-                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"toc"}
-                isOpen={isMdTocOpen}
-                editorTitle={"Markdown Table Of Contents Editor"}
-                onClose={toggleMdTocEditor}
-                setLoading={setLoadingTxt}
+                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
+                contentType={"introduction"}
+                isOpen={isIntroductionOpen}
+                editorTitle={"Markdown Introduction Editor"}
+                onClose={toggleIntroductionEditor}
+                gptButton={true}
+                placeHolderText={"Introduction to the book"}
             />
 
             <MarkdownEditor
                 bookData={editBookData}
-                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
+                contentType={"toc"}
+                isOpen={isMdTocOpen}
+                editorTitle={"Markdown Table Of Contents Editor"}
+                onClose={toggleMdTocEditor}
+                gptButton={true}
+            />
+
+            <MarkdownEditor
+                bookData={editBookData}
+                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                 contentType={"mdBody"}
                 isOpen={isMdBodyOpen}
                 editorTitle={"Markdown Body Editor"}
                 onClose={toggleMdBodyEditor}
-                setLoading={setLoadingTxt}
+                gptButton={true}
                 loadable={true}
             />
 
             <HtmlEditor
                 bookData={editBookData}
-                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                 contentType={"htmlBody"}
                 isOpen={isHtmlBodyOpen}
                 editorTitle={"Html Body Editor"}
@@ -1148,7 +1328,7 @@ const EditBook = () => {
 
             <MarkdownEditor
                 bookData={editBookData}
-                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                 contentType={"mdUsage"}
                 isOpen={isMdUsageOpen}
                 editorTitle={"Markdown Usage Editor"}
@@ -1157,7 +1337,7 @@ const EditBook = () => {
 
             <HtmlEditor
                 bookData={editBookData}
-                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                 contentType={"htmlUsage"}
                 isOpen={isHtmlUsageOpen}
                 editorTitle={"Html Usage Editor"}
@@ -1166,16 +1346,39 @@ const EditBook = () => {
 
             <MarkdownEditor
                 bookData={editBookData}
-                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                 contentType={"summary"}
                 isOpen={isMdSummaryOpen}
                 editorTitle={"Markdown Summary Editor"}
                 onClose={toggleMdSummaryEditor}
+                gptButton={true}
+                placeHolderText={"Book summary (as shown on the kindle page)"}
+            />
+
+            <MarkdownEditor
+                bookData={editBookData}
+                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
+                contentType={"afterEnd"}
+                isOpen={isAfterEndOpen}
+                editorTitle={"Markdown AfterEnd Editor"}
+                onClose={toggleAfterEndEditor}
+                gptButton={true}
+                placeHolderText={"Afterword, at the end of the book"}
+            />
+
+            <MarkdownEditor
+                bookData={editBookData}
+                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
+                contentType={"otherBooks"}
+                isOpen={isOtherBooksOpen}
+                editorTitle={"Markdown OtherBooks Editor"}
+                onClose={toggleOtherBooksEditor}
+                placeHolderText={"Introduction of my other books"}
             />
 
             <ImageGallery
                 bookData={editBookData}
-                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                 contentType={"coverImageId"}
                 isOpen={isImageEditorOpen}
                 editorTitle={"Image Gallery"}
