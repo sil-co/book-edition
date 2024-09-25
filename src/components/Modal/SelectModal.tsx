@@ -69,7 +69,6 @@ const SelectModal = ({
                     responseType: 'blob'
                 }
             );
-            console.log(res.headers); 
             const contentDisposition = res.headers['content-disposition'];
             let fileName = 'downloaded_file.zip'; // デフォルトのファイル名
             // Content-Dispositionヘッダーからファイル名を抽出
