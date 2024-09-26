@@ -23,6 +23,7 @@ interface MarkdownEditorProps {
     gptButton?: boolean;
     loadable?: boolean;
     placeHolderText?: string;
+    extract?: boolean;
 }
 
 const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
@@ -35,6 +36,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     gptButton,
     loadable,
     placeHolderText,
+    extract
 }) => {
     const navigate = useNavigate();
     const { token, setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
@@ -516,6 +518,16 @@ ${htmlContent}
         setCssContent(value);
     }
 
+    const extractCode = () => {
+        try {
+            const confirmMessage = `Extract headers and code from body??`;
+            if (!window.confirm(confirmMessage)) { return; }
+            
+        } catch(e) {
+
+        }
+    }
+
     return (
         <>
             <div className={`fixed m-0 top-0 right-0 h-full w-full bg-white shadow-lg z-20 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
@@ -524,6 +536,14 @@ ${htmlContent}
                         <h2 className="text-xl font-bold mr-2">{editorTitle}</h2>
                     </div>
                     <div className="space-x-2">
+                        {extract && (
+                            <button
+                                onClick={extractCode}
+                                className="bg-blue-500 text-white px-2 py-1 rounded w-18"
+                            >
+                                Extract
+                            </button>
+                        )}
                         {/* Todo: まずはhtmlでいい。その後epubが必要なら作る。 */}
                         {/* {loadable && (
                             <button

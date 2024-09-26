@@ -89,7 +89,6 @@ const EditBook = () => {
             const data: BT.BookDataType = res.data;
             setEditBookData(data);
             setUnEditedData(data);
-            console.log({ ...data })
             if (data.coverImageId) { setSelectedImageId(data.coverImageId); }
         } catch (error) {
             console.error("Failed to get bookData", error);
@@ -1333,6 +1332,7 @@ const EditBook = () => {
                 isOpen={isMdUsageOpen}
                 editorTitle={"Markdown Usage Editor"}
                 onClose={toggleMdUsageEditor}
+                extract={true}
             />
 
             <HtmlEditor
