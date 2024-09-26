@@ -14,10 +14,26 @@ const Login: React.FC = () => {
     useEffect(() => {
         const searchParams = new URLSearchParams(location.search);
         const error = searchParams.get('error');
-        if (error === 'unauthorized') {
-            setErrorMessage('You must log in to access.');
+        if (error) {
+            setErrorMessage(error);
         }
-    }, [location.search, setErrorMessage]);
+    }, [location.search]);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        console.log({token})
+        if (token) {
+            axios.post(
+                API_ENDPOINTS.postUserAuth(),
+                {},
+                { headers: { Authorization: `Bearer ${token}` } },
+            ).then(() => {
+                navigate('/books');
+            }).catch(e => {
+                console.error(e);
+            });
+        }
+    }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();

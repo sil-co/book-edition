@@ -20,18 +20,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
             return;
         }
 
-        // トークンを使ってバックエンドに認証リクエスト
-        axios
-            .get(API_ENDPOINTS.getUserAuth(), {
+        axios.post(
+            API_ENDPOINTS.postUserAuth(),
+            {},
+            {
                 headers: { Authorization: `Bearer ${token}` },
-            })
-            .then(() => {
-                setIsAuthenticated(true); // 認証成功
-            })
-            .catch(() => {
-                localStorage.removeItem('token');
-                navigate('/login');
-            });
+            }
+        ).then(() => {
+            setIsAuthenticated(true); // 認証成功
+        }).catch(() => {
+            localStorage.removeItem('token');
+            navigate('/login');
+        });
     }, [navigate]);
 
     if (!isAuthenticated) {

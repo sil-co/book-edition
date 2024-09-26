@@ -4,7 +4,7 @@ export const BASE_IMAGE_URL = "http://localhost:5000";
 export const BASE_SAMPLE_URL = "http://localhost:5000/resources/sample/no_image.jpg";
 
 export const API_ENDPOINTS = {
-    getUserAuth: () => `${BASE_URL}/user/auth`,
+    postUserAuth: () => `${BASE_URL}/user/auth`,
     postRegister: () => `${BASE_URL}/user/register`,
     postLogin: () => `${BASE_URL}/user/login`,
     getBooks: () => `${BASE_URL}/books`,
@@ -21,6 +21,8 @@ export const API_ENDPOINTS = {
     postGpt: () => `${BASE_URL}/book/gpt`,
     postEpub: () => `${BASE_URL}/book/epub`,
     runGptOfToc: () => `${BASE_URL}/book/gpt/toc`,
+    runGptOfIntroduction: () => `${BASE_URL}/book/gpt/introduction`,
+    runGptOfAfterend: () => `${BASE_URL}/book/gpt/afterend`,
     runGptOfMdBody: () => `${BASE_URL}/book/gpt/mdbody`,
     generateImageCoverGpt: () => `${BASE_URL}/book/gpt/cover`,
     generateHtml: () => `${BASE_URL}/book/generate-html`,

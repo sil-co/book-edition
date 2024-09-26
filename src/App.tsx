@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
-import { useNavigate } from 'react-router-dom';
 
 import { GlobalStateProvider } from './context/GlobalStateProvider';
 import { useGlobalState } from './context/GlobalStateProvider';
@@ -34,11 +33,9 @@ const AppContent = () => {
         setSuccessMessage,
         setWarningMessage,
         setImageModalSrc,
-        setToken,
     } = useGlobalState();
 
     const closeImageModal = () => { setImageModalSrc(''); };
-    const navigate = useNavigate();
 
     useEffect(() => {
         if (successMessage || errorMessage || warningMessage) {
@@ -51,15 +48,6 @@ const AppContent = () => {
             return () => clearTimeout(timer);
         }
     }, [successMessage, errorMessage, warningMessage]);
-
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        setToken(token || '');
-        if (!token) {
-            navigate("/login?error=unauthorized");
-            return;
-        }
-    }, [])
 
     return (
         <>

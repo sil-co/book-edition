@@ -27,7 +27,7 @@ const SelectModal = ({
 }) => {
     const [selectedContent, setSelectedContent] = useState<BT.ContentOption[]>(contentOptions);
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const { token, setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
+    const { setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
 
     const handleContentChange = (id: string) => {
         setSelectedContent(prev =>
@@ -57,6 +57,7 @@ const SelectModal = ({
                 }
             });
 
+            const token = localStorage.getItem('token');
             const res = await axios.post(
                 API_ENDPOINTS.generateHtml(),
                 {

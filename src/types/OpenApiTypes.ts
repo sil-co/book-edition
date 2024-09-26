@@ -1,3 +1,4 @@
+import * as BT from './BookTypes';
 
 export type GptModel = "gpt-4o" | "gpt-4o-mini";
 
@@ -6,13 +7,11 @@ export type GptMessage = {
     content: string;
 }
 
-export type ContentType = 'toc' | 'mdBody' | 'mdUsage' | 'coverImageId' | 'summary';
-
 export type ReqBodyGpt = {
     id: string;
     title: string;
     model?: GptModel;
-    contentType: ContentType;
+    contentType: BT.EditorContentType;
     reqMarkdown?: string;
     count?: number;
 }
@@ -40,5 +39,5 @@ export interface GptImageReq {
 export interface GptImageReqBody extends GptImageReq {
     id: string;
     title: string;
-    contentType: ContentType;
+    contentType: BT.EditorContentType;
 }

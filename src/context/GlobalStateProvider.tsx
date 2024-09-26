@@ -12,8 +12,6 @@ interface GlobalStateContextType {
     setWarningMessage: (msg: string | null) => void;
     setErrorMessage: (msg: string | null) => void;
     setImageModalSrc: (src: string | null) => void;
-    token: string;
-    setToken: (msg: string) => void;
 }
 
 // 初期値の設定
@@ -26,7 +24,6 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
     const [warningMessage, setWarningMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [imageModalSrc, setImageModalSrc] = useState<string | null>(null);
-    const [token, setToken] = useState<string>('');
 
     return (
         <GlobalStateContext.Provider
@@ -41,8 +38,6 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
                 setWarningMessage,
                 setErrorMessage,
                 setImageModalSrc,
-                token,
-                setToken,
             }}
         >
             {children}

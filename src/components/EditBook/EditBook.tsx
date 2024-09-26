@@ -17,26 +17,17 @@ import * as BT from '../../types/BookTypes';
 import * as OT from '../../types/OpenApiTypes';
 
 const EditBook = () => {
-    const id = useParams().id;
     const navigate = useNavigate();
-    const { token, setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
+    const { setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
 
-    if (!token) {
-        navigate("/login?error=unauthorized");
-        return;
-    }
-    if (!id) {
-        navigate("/books");
-        return;
-    }
     let initData: BT.BookDataType = {
-        id: id,
         title: "", // 初期値を空文字に設定
         author: "",
         genre: "",
         isPublished: false,
     };
 
+    const [id, setId] = useState<string>('');
     const [editBookData, setEditBookData] = useState<BT.BookDataType>(initData);
     const [unEditedData, setUnEditedData] = useState<BT.BookDataType>(initData);
     const [isMdTocOpen, setIsMdTocOpen] = useState<boolean>(false);
@@ -59,10 +50,24 @@ const EditBook = () => {
     const previewImageRef = useRef<HTMLImageElement | null>(null);
 
     useEffect(() => {
-    }, [unEditedData]);
+        const token = localStorage.getItem('token');
+        if (!token) {
+            navigate("/login?error=unauthorized");
+            return;
+        }
+        const id = useParams().id;
+        console.log({ id })
+        if (!id) {
+            navigate("/books");
+            return;
+        }
+        setId(id);
+    }, []);
+
 
     useEffect(() => {
-        getBookData();
+        console.log({ id })
+        if (id) { getBookData(); }
     }, [id]);
 
     useEffect(() => {
@@ -82,6 +87,7 @@ const EditBook = () => {
                 await setTime(2000, () => navigate('/books'));
                 return;
             }
+            const token = localStorage.getItem('token');
             const res: AxiosResponse<BT.BookDataType> = await axios.get<BT.BookDataType>(
                 API_ENDPOINTS.getBook(id),
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -146,6 +152,7 @@ const EditBook = () => {
         const formData = new FormData();
         formData.append('cover', blob, coverTitle);
 
+        const token = localStorage.getItem('token');
         const res: AxiosResponse<BT.CoverImageData> = await axios.post<BT.CoverImageData>(
             `${API_ENDPOINTS.uploadCoverImage()}`,
             formData,
@@ -205,6 +212,8 @@ const EditBook = () => {
                 return 'Introduction';
             case 'afterEnd':
                 return 'AfterEnd';
+            case 'otherBooks':
+                return 'Other Books';
             case 'publishedAt':
                 return 'Published_At';
             default:
@@ -226,7 +235,7 @@ const EditBook = () => {
         return extractedData;
     };
 
-    const handleBack = () => {
+    const handleBack = async () => {
         // 編集した箇所のみのプロパティを抽出
         const extractedData: Partial<BT.BookDataType> = extractEditedData();
 
@@ -239,8 +248,7 @@ const EditBook = () => {
                 return;
             }
         }
-
-        navigate('/books');
+        await setTime(2000, () => navigate('/books'));
     }
 
     const handleUpdate = async (e: React.FormEvent) => {
@@ -279,6 +287,7 @@ const EditBook = () => {
             const isGpt: Boolean = await checkIsGpt(id);
             if (isGpt) { return setWarningMessage('Cannot update because GPT is still running.'); }
 
+            const token = localStorage.getItem('token');
             const res: AxiosResponse<BT.BookDataType> = await axios.put<BT.BookDataType>(
                 API_ENDPOINTS.updateBook(id),
                 extractedData,
@@ -582,6 +591,7 @@ const EditBook = () => {
         const formData = new FormData();
         formData.append('cover', blob, coverTitle);
 
+        const token = localStorage.getItem('token');
         const res: AxiosResponse<BT.CoverImageData> = await axios.post<BT.CoverImageData>(
             `${API_ENDPOINTS.uploadCoverImage()}`,
             formData,
@@ -1264,21 +1274,6 @@ const EditBook = () => {
                             <FaSpinner className="animate-spin inline-block" />
                         ) : (
                             'DL-epub'
-                        )}
-                    </button> */}
-                    {/* <button
-                        type="button"
-                        className={`w-16 text-white bg-lime-500 h-10 select-none
-                            font-medium rounded-lg text-sm px-3 py-2.5 text-center me-2 mb-2 min-w-[90px]
-                            ${isDisabled ? '' : 'hover:bg-gradient-to-bl'}
-                        `}
-                        disabled={isDisabled}
-                        onClick={toggleSelectModal}
-                    >
-                        {isDisabled ? (
-                            <FaSpinner className="animate-spin inline-block" />
-                        ) : (
-                            'DL-html'
                         )}
                     </button> */}
                 </form>

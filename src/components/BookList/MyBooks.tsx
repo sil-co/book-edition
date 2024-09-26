@@ -13,18 +13,18 @@ import * as BT from '../../types/BookTypes';
 
 const MyBooks = () => {
     const navigate = useNavigate();
-    const { token, setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
-
-    if (!token) {
-        navigate("/login?error=unauthorized");
-        return;
-    }
+    const { setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
 
     const [books, setBooks] = useState<BT.BookDataType[]>([]);
     const [isSelectModalOpen, setIsSelectModalOpen] = useState<boolean>(false);
     const [selectedBookId, setSelectedBookId] = useState<string>('');
 
     useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            navigate("/login?error=unauthorized&source=mybook");
+            return;
+        }
         axios.get<BT.BookDataType[]>(API_ENDPOINTS.getBooksInit(), {
             headers: { Authorization: `Bearer ${token}` },
         }).then((res) => {

@@ -39,11 +39,8 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     extract
 }) => {
     const navigate = useNavigate();
-    const { token, setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
-    if (!token) {
-        navigate("/login?error=unauthorized");
-        return;
-    }
+    const { setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
+
     const [isStoppedGpt, setIsStoppedGpt] = useState<boolean>(false);
     const [currentWS, setCurrentWS] = useState<WebSocket | null>(null);
     const [tailwindDefaultCss, setTailwindDefaultCss] = useState<string>('');
@@ -52,6 +49,14 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     const [markdownContent, setMarkdownContent] = useState<string>("");
     const [cssEditorVisible, setCssEditorVisible] = useState(false);
     const [cssContent, setCssContent] = useState("");
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            navigate("/login?error=unauthorized");
+            return;
+        }
+    }, []);
 
     useEffect(() => {
         appliesToIframe();
@@ -170,15 +175,8 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         setMarkdownContent(newContent);
     };
 
-    const runGptOfToc = async (
-        reqBodyGpt: OT.ReqBodyGpt
-    ) => {
-        const res: AxiosResponse<string> = await axios.post<string>(API_ENDPOINTS.runGptOfToc(), reqBodyGpt);
-        return res.data;
-    }
-
     const runGpt = async () => {
-        if (!gptButton) return alert("Can't Run GPT");
+        if (!gptButton) return setErrorMessage("Can't Run GPT");
         const confirmMessage = `Do you run GPT?`;
         if (!window.confirm(confirmMessage)) { return; }
 
@@ -193,10 +191,11 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         model: 'gpt-4o',
                         contentType: contentType,
                     }
-                    const gptResult: string = await runGptOfToc(reqBodyGpt);
+                    const res: AxiosResponse<string> = await axios.post<string>(API_ENDPOINTS.runGptOfToc(), reqBodyGpt);
+                    const gptResult: string = res.data;
                     const newContent: string = bookData[contentType] || '' + gptResult;
                     handleContentsChange(contentType, newContent);
-                    alert('GPT Output Successfully!');
+                    setSuccessMessage('GPT Output Successfully!');
                     break;
                 }
                 case 'mdBody': {
@@ -227,7 +226,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                             handleContentsChange(contentType, gptResult);
                             setLoadingTxt(`GPT Running... ${data.gptProgress ? data.gptProgress : ''}`);
                             if (data.status === 'finished') {
-                                alert('GPT Output Successfully!');
+                                setSuccessMessage('GPT Output Successfully!');
                                 ws.close();
                             }
                         };
@@ -259,32 +258,60 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                 case 'summary': {
                     return '';
                 }
+                case 'introduction': {
+                    const reqBodyGpt: OT.ReqBodyGpt = {
+                        id: String(bookData.id),
+                        title: bookData.title,
+                        model: 'gpt-4o',
+                        contentType: contentType,
+                    }
+                    const res: AxiosResponse<string> = await axios.post<string>(API_ENDPOINTS.runGptOfIntroduction(), reqBodyGpt);
+                    const gptResult: string = res.data;
+                    const newContent: string = bookData[contentType] || '' + gptResult;
+                    handleContentsChange(contentType, newContent);
+                    setSuccessMessage('GPT Output Successfully!');
+                    break;
+                }
+                case 'afterEnd': {
+                    const reqBodyGpt: OT.ReqBodyGpt = {
+                        id: String(bookData.id),
+                        title: bookData.title,
+                        model: 'gpt-4o',
+                        contentType: contentType,
+                    }
+                    const res: AxiosResponse<string> = await axios.post<string>(API_ENDPOINTS.runGptOfAfterend(), reqBodyGpt);
+                    const gptResult: string = res.data;
+                    const newContent: string = bookData[contentType] || '' + gptResult;
+                    handleContentsChange(contentType, newContent);
+                    setSuccessMessage('GPT Output Successfully!');
+                    break;
+                }
                 default: {
                     return '';
                 }
             }
         } catch (e) {
-            alert('Failed GPT Output. Please try again.');
+            setErrorMessage('Failed GPT Output. Please try again.');
         } finally {
             setLoadingTxt('');
         }
     }
 
     const loadTemporaryGpt = async () => {
-        if (!gptButton || !bookData.id) { return alert("Can't Run GPT.") };
+        if (!gptButton || !bookData.id) { return setErrorMessage("Can't Run GPT.") };
         try {
             const confirmMessage = `Load previous GPT output?`;
             if (!window.confirm(confirmMessage)) { return; }
             setLoadingTxt(`GPT Loading...`);
             const res: AxiosResponse<BT.TemporaryGptType> = await axios.get<BT.TemporaryGptType>(API_ENDPOINTS.getTemporaryGpt(bookData.id));
             const temporaryGpt = res.data.temporaryGpt;
-            if (!temporaryGpt) { return alert('There is no content.'); }
+            if (!temporaryGpt) { return setErrorMessage('There is no content.'); }
             const newContent = (bookData[contentType] || '') + '\n' + temporaryGpt;
 
             handleContentsChange(contentType, newContent);
-            alert('GPT Output Successfully!');
+            setSuccessMessage('GPT Output Successfully!');
         } catch (e) {
-            alert('Failed GPT Output. Please try again.');
+            setErrorMessage('Failed GPT Output. Please try again.');
         } finally {
             setLoadingTxt('');
         }
@@ -307,7 +334,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             const confirmMessage = `Download this markdown?`;
             if (!window.confirm(confirmMessage)) { return; }
             const content = bookData[contentType];
-            if (!content) { return alert('No content.'); }
+            if (!content) { return setErrorMessage('No content.'); }
             const blob = new Blob([content], { type: 'text/markdown' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -447,6 +474,7 @@ ${htmlContent}
                     fullCss: convertCss2(removeCustomProperties(tailwindDefaultCss + cssContent)),
                 }
 
+                const token = localStorage.getItem('token');
                 const res: AxiosResponse<Blob> = await axios.post(
                     API_ENDPOINTS.postEpub(),
                     reqData,
@@ -522,8 +550,8 @@ ${htmlContent}
         try {
             const confirmMessage = `Extract headers and code from body??`;
             if (!window.confirm(confirmMessage)) { return; }
-            
-        } catch(e) {
+
+        } catch (e) {
 
         }
     }
