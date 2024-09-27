@@ -546,15 +546,38 @@ ${htmlContent}
         setCssContent(value);
     }
 
-    const extractCode = () => {
-        try {
-            const confirmMessage = `Extract headers and code from body??`;
-            if (!window.confirm(confirmMessage)) { return; }
+    const extractHeadersAndCode = (markdownText: string): string => {
+        const confirmMessage = `Extract headers and code from body?`;
+        if (!window.confirm(confirmMessage)) { return ''; }
 
-        } catch (e) {
+        const headerRegex = /^(#{1,6} .+)/gm; // ヘッダーを検出する正規表現
+        const codeBlockRegex = /```(\w+)?/; // コードブロックを検出する正規表現
 
+        let newMarkdown = '';
+
+        const lines = markdownText.split('\n');
+        let isCodeBlock = false;
+
+        // 各行を順番に確認し、ヘッダーまたはコードブロックを追加
+        for (const line of lines) {
+            if (isCodeBlock) {
+                newMarkdown += `${line}\n`;
+            }
+            // ヘッダーが存在する場合は追加
+            else if (line.match(headerRegex)) {
+                newMarkdown += `${line}\n`;
+            }
+            // コードブロックが存在する場合は追加
+            else if (line.match(codeBlockRegex)) {
+                console.log(line)
+                newMarkdown += `${line}\n`;
+                isCodeBlock = !isCodeBlock;
+            }
         }
-    }
+
+        return newMarkdown;
+    };
+
 
     return (
         <>
@@ -566,7 +589,7 @@ ${htmlContent}
                     <div className="space-x-2">
                         {extract && (
                             <button
-                                onClick={extractCode}
+                                onClick={() => extractHeadersAndCode(bookData.mdBody || '')}
                                 className="bg-blue-500 text-white px-2 py-1 rounded w-18"
                             >
                                 Extract

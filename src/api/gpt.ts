@@ -10,7 +10,7 @@ export const runGpt = async (
     return res.data;
 }
 
-export const checkIsGpt = async (id: string): Promise<Boolean> => {
+export const checkIsGpt = async (id: string): Promise<boolean> => {
     const resIsGpt: AxiosResponse<BT.IsGptType> = await axios.get<BT.IsGptType>(API_ENDPOINTS.getIsGpt(id));
     return resIsGpt.data.isGptRunning;
 }

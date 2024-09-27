@@ -17,6 +17,7 @@ import * as BT from '../../types/BookTypes';
 import * as OT from '../../types/OpenApiTypes';
 
 const EditBook = () => {
+    const { id } = useParams();
     const navigate = useNavigate();
     const { setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
 
@@ -27,7 +28,7 @@ const EditBook = () => {
         isPublished: false,
     };
 
-    const [id, setId] = useState<string>('');
+    // const [id, setId] = useState<string>('');
     const [editBookData, setEditBookData] = useState<BT.BookDataType>(initData);
     const [unEditedData, setUnEditedData] = useState<BT.BookDataType>(initData);
     const [isMdTocOpen, setIsMdTocOpen] = useState<boolean>(false);
@@ -50,25 +51,22 @@ const EditBook = () => {
     const previewImageRef = useRef<HTMLImageElement | null>(null);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            navigate("/login?error=unauthorized");
-            return;
-        }
-        const id = useParams().id;
         console.log({ id })
         if (!id) {
             navigate("/books");
             return;
         }
-        setId(id);
-    }, []);
-
+        getBookData();
+    }, [id]);
 
     useEffect(() => {
-        console.log({ id })
-        if (id) { getBookData(); }
-    }, [id]);
+        const token = localStorage.getItem('token');
+        console.log({token})
+        if (!token) {
+            navigate("/login?error=unauthorized");
+            return;
+        }
+    }, []);
 
     useEffect(() => {
         if (imagePreviewId) { setNewPreviewImage(imagePreviewId); }
@@ -81,7 +79,8 @@ const EditBook = () => {
     const getBookData = async () => {
         try {
             setLoadingTxt('Loading...');
-            const isGpt: Boolean = await checkIsGpt(id);
+            if (!id) { throw new Error('not found id'); }
+            const isGpt: boolean = await checkIsGpt(id);
             if (isGpt) {
                 setWarningMessage('Cannot display because GPT is still running.');
                 await setTime(2000, () => navigate('/books'));
@@ -284,7 +283,8 @@ const EditBook = () => {
             // if (isChangedCover) { confirmMessage += 'Book Cover'; }
             if (!window.confirm(confirmMessage)) { return; }
 
-            const isGpt: Boolean = await checkIsGpt(id);
+            if (!id) { throw new Error('not found id'); }
+            const isGpt: boolean = await checkIsGpt(id);
             if (isGpt) { return setWarningMessage('Cannot update because GPT is still running.'); }
 
             const token = localStorage.getItem('token');
@@ -330,6 +330,7 @@ const EditBook = () => {
             try {
                 if (!editBookData.mdBody && editBookData.mdBody !== '') {
                     setLoadingTxt('Loading...');
+                    if (!id) { throw new Error('not found id'); }
                     const [_, res]: [void, AxiosResponse<BT.MdBodyType>] = await Promise.all([
                         setTime(200),
                         axios.get<BT.MdBodyType>(API_ENDPOINTS.getMdBody(id)),
@@ -362,6 +363,7 @@ const EditBook = () => {
             try {
                 if (!editBookData.htmlBody && editBookData.htmlBody !== '') {
                     setLoadingTxt('Loading...');
+                    if (!id) { throw new Error('not found id'); }
                     const [_, res]: [void, AxiosResponse<BT.HtmlBodyType>] = await Promise.all([
                         setTime(200),
                         axios.get<BT.HtmlBodyType>(API_ENDPOINTS.getHtmlBody(id)),
@@ -394,6 +396,7 @@ const EditBook = () => {
             try {
                 if (!editBookData.mdUsage && editBookData.mdUsage !== '') {
                     setLoadingTxt('Loading...');
+                    if (!id) { throw new Error('not found id'); }
                     const [_, res]: [void, AxiosResponse<BT.MdUsageType>] = await Promise.all([
                         setTime(200),
                         axios.get<BT.MdUsageType>(API_ENDPOINTS.getMdUsage(id)),
@@ -426,6 +429,7 @@ const EditBook = () => {
             try {
                 if (!editBookData.htmlUsage && editBookData.htmlUsage !== '') {
                     setLoadingTxt('Loading...');
+                    if (!id) { throw new Error('not found id'); }
                     const [_, res]: [void, AxiosResponse<BT.HtmlUsageType>] = await Promise.all([
                         setTime(200),
                         axios.get<BT.HtmlUsageType>(API_ENDPOINTS.getHtmlUsage(id)),

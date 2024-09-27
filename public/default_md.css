@@ -23,29 +23,12 @@ body {
     }
 }
 
-#all-wrapper .cover-img {
-    max-width: 100%;
-    height: auto;
-}
-
 #all-wrapper h1 {
-    color: #1c4587;
-    font-weight: 700;
-    font-size: 60pt;
-}
-
-#all-wrapper h1 {
-    /* color: black; */
     color: #1c4587;
     font-weight: 700;
     font-size: 50pt;
     letter-spacing: 2px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-#all-wrapper h1 .chapter-title {
-    color: #1c4587;
-    /* color: black; */
     border-bottom-color: #1c4587;
     border-bottom-width: 3pt;
     border-bottom-style: solid;
@@ -62,9 +45,6 @@ body {
     orphans: 2;
     widows: 2;
     text-align: left;
-}
-
-#all-wrapper h2 {
     background-color: #ffffaa;
     font-size: 30pt;
     color: #1c4587;
@@ -82,9 +62,6 @@ body {
     orphans: 2;
     widows: 2;
     text-align: left;
-}
-
-#all-wrapper h3 {
     font-size: 16pt;
     color: #1c4587;
     font-weight: 700;
@@ -109,24 +86,33 @@ body {
     font-weight: 700;
 }
 
-.page-break {
-    page-break-before: always;
-    break-before: page;
+#all-wrapper img {
+    max-width: 100%;
+    width: 100%;
 }
- ul {
+
+#all-wrapper ul {
     list-style-type: none;
     padding: 0;
     margin: 0;
 }
- ul li {
+
+#all-wrapper ul li {
     margin: 10px 0;
     padding-left: 1em;
 }
- ul li a {
+
+#all-wrapper ul li a {
     text-decoration: none;
     font-weight: bold;
     font-size: 1em;
 }
- ul li a:hover {
+
+#all-wrapper ul li a:hover {
     text-decoration: underline;
+}
+
+#all-wrapper .page-break {
+    page-break-before: always;
+    break-before: page;
 }
