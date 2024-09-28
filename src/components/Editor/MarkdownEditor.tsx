@@ -1,10 +1,13 @@
-import axios, { AxiosResponse, isCancel } from 'axios';
-import ReactMarkdown, { Components } from 'react-markdown';
+import axios, { AxiosResponse } from 'axios';
 import { useNavigate } from 'react-router-dom';
+import ReactMarkdown, { Components } from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 import 'highlight.js/styles/github.css';
 import { renderToString } from "react-dom/server";
+import { useCodeMirror } from "@uiw/react-codemirror";
+import { css } from "@codemirror/lang-css";
+import { oneDark } from "@codemirror/theme-one-dark";
 
 import { useState, useEffect, useRef } from 'react';
 
@@ -39,16 +42,25 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     extract
 }) => {
     const navigate = useNavigate();
-    const { setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
+    const { setSuccessMessage, setLoadingTxt, setErrorMessage } = useGlobalState();
 
     const [isStoppedGpt, setIsStoppedGpt] = useState<boolean>(false);
     const [currentWS, setCurrentWS] = useState<WebSocket | null>(null);
     const [tailwindDefaultCss, setTailwindDefaultCss] = useState<string>('');
     const contentRef = useRef<HTMLDivElement>(null);
+    const contentInnerRef = useRef<HTMLDivElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const [markdownContent, setMarkdownContent] = useState<string>("");
     const [cssEditorVisible, setCssEditorVisible] = useState(false);
     const [cssContent, setCssContent] = useState("");
+    const editorRef = useRef(null);  // エディタのDOM参照を作成
+    const { setContainer } = useCodeMirror({
+        container: editorRef.current,  // useCodeMirrorでエディタをDOMにセット
+        value: bookData.defaultStyle,   // 初期値
+        theme: oneDark,                 // テーマ
+        extensions: [css()],            // CSS拡張
+        onChange: (value) => handleChangeCss(value)  // 値が変わったときの処理
+    });
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -57,6 +69,12 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             return;
         }
     }, []);
+
+    useEffect(() => {
+        if (cssEditorVisible && editorRef.current) {
+            setContainer(editorRef.current);
+        }
+    }, [setContainer, cssEditorVisible]);
 
     useEffect(() => {
         appliesToIframe();
@@ -68,7 +86,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
     useEffect(() => {
         setCssContent(bookData.defaultStyle || '');
-    }, [bookData.defaultStyle])
+    }, [bookData.defaultStyle]);
 
     const reactMarkdownComponentsTw: Components = {
         h1: ({ node, ...props }) => <h1 className="text-blue-900 font-bold text-[60pt] my-6" {...props} />,
@@ -388,22 +406,28 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         try {
             const confirmMessage = `Download this html?`;
             if (!window.confirm(confirmMessage)) { return; }
-            if (iframeRef.current) {
-                // const htmlContent = contentRef.current.innerHTML;
-                // const cssContent = await extractCSS();
-                // iframeのcontentDocumentを取得
-                const iframeDocument = iframeRef.current.contentDocument;
-                if (iframeDocument) {
-                    // iframe内のHTMLを取得
-                    const iframeContent = iframeDocument.documentElement.outerHTML;
-                    const blob = new Blob([iframeContent], { type: 'text/html' });
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = `${bookData.title}_${contentType}.html`;
-                    link.click();
-                    URL.revokeObjectURL(link.href);
-                    setSuccessMessage('Successfully html file download!')
-                }
+            if (contentInnerRef.current) {
+                const htmlContent = contentInnerRef.current.innerHTML;
+                const fullHtml = `
+<html lang="${bookData.language || 'en'}">
+<head>
+<meta charset="UTF-8">
+<style>${cssContent}</style>
+<title>${bookData.title}</title>
+</head>
+<body>
+<div id="all-wrapper">
+${htmlContent}
+</div>
+</body>
+</html>`;
+                const blob = new Blob([fullHtml], { type: 'text/html' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `${bookData.title}_${contentType}.html`;
+                link.click();
+                URL.revokeObjectURL(link.href);
+                setSuccessMessage('Successfully html file download!')
             }
         } catch (error) {
             setErrorMessage("Failed to download");
@@ -574,10 +598,8 @@ ${htmlContent}
                 isCodeBlock = !isCodeBlock;
             }
         }
-
         return newMarkdown;
     };
-
 
     return (
         <>
@@ -660,12 +682,13 @@ ${htmlContent}
                             onChange={handleToggleChange}
                             checked={cssEditorVisible}
                         />
-                        <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        <div className="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                         <span className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">CSS Editor</span>
                     </label>
                 </div>
 
                 <div className="flex flex-col pl-4 pr-4 pb-4 pt-1 h-full md:flex-row">
+
                     <div className="w-full md:w-1/2 pr-2 h-full relative">
                         <textarea
                             name="markdown"
@@ -676,28 +699,37 @@ ${htmlContent}
                         ></textarea>
 
                         {cssEditorVisible && (
-                            <textarea
-                                name="cssEditor"
-                                placeholder="CSS content"
-                                onChange={(e) => handleChangeCss(e.target.value)}
-                                value={bookData.defaultStyle}
-                                className="absolute top-0 -left-1 z-30 w-[calc(100%-0.25rem)] h-[91%] p-2 pr-0 border border-gray-300 rounded"
-                            ></textarea>
+                            // <textarea
+                            //     name="cssEditor"
+                            //     placeholder="CSS content"
+                            //     onChange={(e) => handleChangeCss(e.target.value)}
+                            //     value={bookData.defaultStyle}
+                            //     className="absolute top-0 -left-1 z-30 w-[calc(100%-0.25rem)] h-[91%] p-2 pr-0 border border-gray-300 rounded"
+                            // ></textarea>
+                            <div
+                                className="absolute top-0 -left-1 z-30 w-[calc(100%-0.25rem)] h-[91%] overflow-auto pr-0 border border-gray-300 rounded"
+                                ref={editorRef}  // エディタを配置するDOMを指定
+                            >
+                                {/* <ReactCodeMirror value={value} onChange={onChange} /> */}
+                            </div>
                         )}
                     </div>
 
                     <div className="w-full md:w-1/2 pl-2 h-[91%] overflow-auto p-2 border border-gray-300 rounded max-w-none">
-                        {/* <div ref={contentRef}>
-                            <ReactMarkdown
-                                className="prose w-full"
-                                rehypePlugins={[rehypeHighlight]}
-                                remarkPlugins={[remarkGfm]}  // GitHub Flavored Markdown (GFM)をサポート
-                                components={reactMarkdownComponents}
-                            >
-                                {markdownContent}
-                            </ReactMarkdown>
-                        </div> */}
-                        <iframe ref={iframeRef} className="w-full h-full border-gray-300 rounded"></iframe>
+                        <div ref={contentRef}>
+                            <style>${cssContent}</style>
+                            <div id="all-wrapper" ref={contentInnerRef}>
+                                <ReactMarkdown
+                                    className="prose w-full"
+                                    rehypePlugins={[rehypeHighlight]}
+                                    remarkPlugins={[remarkGfm]}  // GitHub Flavored Markdown (GFM)をサポート
+                                    components={reactMarkdownComponents}
+                                >
+                                    {markdownContent}
+                                </ReactMarkdown>
+                            </div>
+                        </div>
+                        {/* <iframe ref={iframeRef} className="w-full h-full border-gray-300 rounded"></iframe> */}
                     </div>
                 </div>
             </div >

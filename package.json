@@ -10,8 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@codemirror/lang-css": "^6.3.0",
+    "@codemirror/lang-html": "^6.4.9",
+    "@codemirror/theme-one-dark": "^6.1.2",
     "@reduxjs/toolkit": "^2.2.7",
+    "@uiw/react-codemirror": "^4.23.3",
     "axios": "^1.7.7",
+    "codemirror": "^6.0.1",
     "epub-gen": "^0.1.0",
     "file-server": "^2.2.1",
     "highlight.js": "^11.10.0",

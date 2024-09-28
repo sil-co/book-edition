@@ -28,7 +28,6 @@ const EditBook = () => {
         isPublished: false,
     };
 
-    // const [id, setId] = useState<string>('');
     const [editBookData, setEditBookData] = useState<BT.BookDataType>(initData);
     const [unEditedData, setUnEditedData] = useState<BT.BookDataType>(initData);
     const [isMdTocOpen, setIsMdTocOpen] = useState<boolean>(false);
@@ -51,7 +50,6 @@ const EditBook = () => {
     const previewImageRef = useRef<HTMLImageElement | null>(null);
 
     useEffect(() => {
-        console.log({ id })
         if (!id) {
             navigate("/books");
             return;
@@ -61,7 +59,6 @@ const EditBook = () => {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        console.log({token})
         if (!token) {
             navigate("/login?error=unauthorized");
             return;
@@ -108,11 +105,6 @@ const EditBook = () => {
         if (!selectedImageId) { return setErrorMessage("Cannot select") }
         const res: AxiosResponse<BT.CoverImageData> = await axios.get<BT.CoverImageData>(API_ENDPOINTS.getCoverImage(selectedImageId));
         const imagePath = res.data.imagePath || '';
-        // const fetchedImage = await fetch(imagePath);
-        // const blob = await fetchedImage.blob();
-        // const newImageSelected = URL.createObjectURL(blob);
-        // URL.revokeObjectURL(selectedImageId);
-        // setSelectedImageId(newImageSelected);
         const newImagePath = `${imagePath}?t=${new Date().getTime()}`;
         if (selectedImageRef.current) { selectedImageRef.current.src = newImagePath; }
     }
@@ -300,8 +292,9 @@ const EditBook = () => {
                     [key]: res.data[key as keyof BT.BookDataType]
                 }));
             });
+            const updatedField: string = Object.keys(res.data).filter(key => key !== 'id').join(", ");
 
-            setSuccessMessage(`${res.data.title} Updated Successfully! `);
+            setSuccessMessage(`${updatedField} Updated Successfully! `);
         } catch (e) {
             setErrorMessage("Failed to Update");
         } finally {

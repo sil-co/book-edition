@@ -2,17 +2,17 @@ import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 
 import { GlobalStateProvider } from './context/GlobalStateProvider';
 import { useGlobalState } from './context/GlobalStateProvider';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 // コンポーネントを遅延読み込み
-// import { Suspense, lazy } from 'react';
-// const MyBooks = lazy(() => import('./components/MyBooks/MyBooks'));
-// const CreateBook = lazy(() => import('./components/CreateBook/CreateBook'));
-// const EditBook = lazy(() => import('./components/EditBook/EditBook'));
+import { Suspense, lazy } from 'react';
+const MyBooks = lazy(() => import('./components/BookList/MyBooks'));
+const CreateBook = lazy(() => import('./components/CreateBook/CreateBook'));
+const EditBook = lazy(() => import('./components/EditBook/EditBook'));
 
-import MyBooks from './components/BookList/MyBooks';
+// import MyBooks from './components/BookList/MyBooks';
+// import CreateBook from './components/CreateBook/CreateBook';
+// import EditBook from './components/EditBook/EditBook';
 import BookList from './components/BookList/BookList';
-import CreateBook from './components/CreateBook/CreateBook';
-import EditBook from './components/EditBook/EditBook';
 import Login from "./components/Auth/Login";
 import Register from "./components/Auth/Register";
 import ProtectedRoute from './components/Auth/ProtectRoute';
@@ -51,14 +51,16 @@ const AppContent = () => {
 
     return (
         <>
-            <Routes>
-                <Route path="/" element={<BookList />} />
-                <Route path="/books" element={<ProtectedRoute><MyBooks /></ProtectedRoute>} />
-                <Route path="/edit/:id" element={<ProtectedRoute><EditBook /></ProtectedRoute>} />
-                <Route path="/create" element={<ProtectedRoute><CreateBook /></ProtectedRoute>} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-            </Routes>
+            <Suspense fallback={<Loading loadingTxt={'Loading...'} />}>
+                <Routes>
+                    <Route path="/" element={<BookList />} />
+                    <Route path="/books" element={<ProtectedRoute><MyBooks /></ProtectedRoute>} />
+                    <Route path="/edit/:id" element={<ProtectedRoute><EditBook /></ProtectedRoute>} />
+                    <Route path="/create" element={<ProtectedRoute><CreateBook /></ProtectedRoute>} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                </Routes>
+            </Suspense>
 
             {successMessage && <SuccessModal successMessage={successMessage} />}
             {warningMessage && <WarningModal warningMessage={warningMessage} />}

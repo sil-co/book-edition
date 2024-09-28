@@ -21,7 +21,6 @@ const Login: React.FC = () => {
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        console.log({token})
         if (token) {
             axios.post(
                 API_ENDPOINTS.postUserAuth(),
