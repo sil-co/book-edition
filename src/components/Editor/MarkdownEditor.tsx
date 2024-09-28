@@ -4,17 +4,18 @@ import ReactMarkdown, { Components } from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 import 'highlight.js/styles/github.css';
-import { renderToString } from "react-dom/server";
 import { useCodeMirror } from "@uiw/react-codemirror";
 import { css } from "@codemirror/lang-css";
 import { oneDark } from "@codemirror/theme-one-dark";
+import debounce from 'lodash/debounce';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, DragEvent, ChangeEvent } from 'react';
 
 import { useGlobalState } from '../../context/GlobalStateProvider';
 import { API_ENDPOINTS, WS_ENDPOINTS } from "../../api/urls";
 import * as BT from '../../types/BookTypes';
 import * as OT from '../../types/OpenApiTypes';
+import { getFileExtension } from '../../utility/utility';
 
 interface MarkdownEditorProps {
     bookData: BT.BookDataType;
@@ -46,20 +47,52 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
     const [isStoppedGpt, setIsStoppedGpt] = useState<boolean>(false);
     const [currentWS, setCurrentWS] = useState<WebSocket | null>(null);
-    const [tailwindDefaultCss, setTailwindDefaultCss] = useState<string>('');
     const contentRef = useRef<HTMLDivElement>(null);
     const contentInnerRef = useRef<HTMLDivElement>(null);
-    const iframeRef = useRef<HTMLIFrameElement>(null);
-    const [markdownContent, setMarkdownContent] = useState<string>("");
+    // const [markdownContent, setMarkdownContent] = useState<string>("");
+    const [previewContent, setPreviewContent] = useState(bookData[contentType] || '');
     const [cssEditorVisible, setCssEditorVisible] = useState(false);
     const [cssContent, setCssContent] = useState("");
-    const editorRef = useRef(null);  // エディタのDOM参照を作成
+    const editorRef = useRef(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const handleChangeCss = (value: string) => {
+        handleContentsChange('defaultStyle', value);
+        setCssContent(value);
+    }
+
+    const debouncedHandleChangeCss = useCallback(
+        debounce((value) => handleChangeCss(value), 4000),
+        [handleChangeCss]
+    );
+
+    const debouncedSetPreviewContent = useCallback(
+        debounce(() => {
+            if (textareaRef.current) {
+                const newContent = textareaRef.current.value;
+                setPreviewContent(newContent);
+            }
+        }, 4000),
+        []
+    );
+
+    const debouncedHandleContentsChange = useCallback(
+        debounce(() => {
+            if (textareaRef.current) {
+                const newContent = textareaRef.current.value;
+                const formattedContent = formatMarkdownText(newContent);
+                handleContentsChange(contentType, formattedContent);
+            }
+        }, 2000),
+        [handleContentsChange]
+    );
+
     const { setContainer } = useCodeMirror({
         container: editorRef.current,  // useCodeMirrorでエディタをDOMにセット
         value: bookData.defaultStyle,   // 初期値
         theme: oneDark,                 // テーマ
         extensions: [css()],            // CSS拡張
-        onChange: (value) => handleChangeCss(value)  // 値が変わったときの処理
+        onChange: debouncedHandleChangeCss // 値が変わったときの処理
     });
 
     useEffect(() => {
@@ -77,48 +110,22 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }, [setContainer, cssEditorVisible]);
 
     useEffect(() => {
-        appliesToIframe();
-    }, [markdownContent, cssContent]);
-
-    useEffect(() => {
-        setMarkdownContent(bookData[contentType] || '');
+        setPreviewContent(bookData[contentType] || '');
+        if (textareaRef.current) {
+            textareaRef.current.value = bookData[contentType] || '';
+        }
     }, [bookData[contentType]]);
 
     useEffect(() => {
         setCssContent(bookData.defaultStyle || '');
     }, [bookData.defaultStyle]);
 
-    const reactMarkdownComponentsTw: Components = {
-        h1: ({ node, ...props }) => <h1 className="text-blue-900 font-bold text-[60pt] my-6" {...props} />,
-        h2: ({ node, ...props }) => <h2 className="text-2xl font-bold text-left border-b-4 border-blue-800 pt-4 pb-1 my-6" {...props} >
-            <span className="bg-yellow-200 text-blue-800 font-bold text-[30pt] inline-block p-2">{props.children}</span>
-        </h2>,
-        h3: ({ node, ...props }) => <h3 className="text-xl font-medium text-left border-b-4 border-blue-800 pt-4 pb-1 my-4" {...props}>
-            <span className="text-blue-800 font-bold text-xl">{props.children}</span>
-        </h3>,
-        h4: ({ node, ...props }) => <h4 className="text-lg font-medium text-left border-b-2 border-blue-800 pt-4 pb-1 my-4" {...props}>
-            <span className="text-blue-800">{props.children}</span>
-        </h4>,
-        p: ({ node, ...props }) => <p className="text-base leading-relaxed my-2" {...props} />,
-        a: ({ node, ...props }) => <a className="text-blue-600 hover:underline" {...props} />,
-        ul: ({ node, ...props }) => <ul className="list-disc list-inside my-4" {...props} />,
-        ol: ({ node, ...props }) => <ol className="list-decimal list-inside my-4" {...props} />,
-        li: ({ node, ...props }) => <li className="my-1" {...props} />,
-        blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4" {...props} />,
-        pre: ({ node, ...props }) => <pre className="bg-gray-100 rounded p-4 my-4 overflow-x-auto" {...props} />,
-        code: ({ node, ...props }) => <code className="bg-gray-100 p-1 rounded" {...props} />,
-        table: ({ node, ...props }) => <table className="table-auto border-collapse border border-gray-400 my-4" {...props} />,
-        thead: ({ node, ...props }) => <thead className="bg-gray-200" {...props} />,
-        tr: ({ node, ...props }) => <tr className="border-t border-gray-300" {...props} />,
-        th: ({ node, ...props }) => <th className="border px-4 py-2" {...props} />,
-        td: ({ node, ...props }) => <td className="border px-4 py-2" {...props} />,
-    }
-
     const reactMarkdownComponents: Components = {
         h1: ({ node, ...props }) => <h1 {...props} />,
         h2: ({ node, ...props }) => <h2 {...props} ><span>{props.children}</span></h2>,
         h3: ({ node, ...props }) => <h3 {...props}><span>{props.children}</span></h3>,
         h4: ({ node, ...props }) => <h4 {...props}><span>{props.children}</span></h4>,
+        img: ({ node, ...props }) => <img {...props} loading="lazy" />,
         p: ({ node, ...props }) => <p {...props} />,
         a: ({ node, ...props }) => <a {...props} />,
         ul: ({ node, ...props }) => <ul {...props} />,
@@ -132,42 +139,6 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         tr: ({ node, ...props }) => <tr {...props} />,
         th: ({ node, ...props }) => <th {...props} />,
         td: ({ node, ...props }) => <td {...props} />,
-    }
-
-    const appliesToIframe = () => {
-        if (iframeRef.current) {
-            const iframeDocument = iframeRef.current.contentDocument;
-            if (iframeDocument) {
-                // ReactMarkdownをHTMLに変換する
-                const renderedMarkdown = renderToString(
-                    <ReactMarkdown
-                        rehypePlugins={[rehypeHighlight]}
-                        remarkPlugins={[remarkGfm]}  // GitHub Flavored Markdown (GFM)をサポート
-                        components={reactMarkdownComponents}
-                    >
-                        {markdownContent}
-                    </ReactMarkdown>
-                );
-
-                // iframe内のHTMLを更新
-                iframeDocument.open();
-                iframeDocument.write(`
-              <html lang="ja">
-                <head>
-                    <meta charset="UTF-8">
-                    <!-- <link rel="stylesheet" href="https://unpkg.com/tailwindcss@2.0.0/dist/tailwind.min.css" /> -->
-                </head>
-                <style>${cssContent}</style>
-                <body>
-                  <div class="prose" id="all-wrapper">
-                    ${renderedMarkdown}
-                  </div>
-                </body>
-              </html>
-            `);
-                iframeDocument.close();
-            }
-        }
     }
 
     const getCss = async () => {
@@ -187,11 +158,14 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         return text.replace(/\\n/g, '\n');
     }
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const newContent = formatMarkdownText(e.target.value);
-        handleContentsChange(contentType, newContent);
-        setMarkdownContent(newContent);
-    };
+    const handleInputChange = useCallback(() => {
+        if (textareaRef.current) {
+            // const newContent = textareaRef.current.value;
+            // setEditorContent(newContent);
+            debouncedHandleContentsChange();
+            debouncedSetPreviewContent();
+        }
+    }, [handleContentsChange, debouncedSetPreviewContent]);
 
     const runGpt = async () => {
         if (!gptButton) return setErrorMessage("Can't Run GPT");
@@ -368,40 +342,6 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         }
     };
 
-    const extractCSS = async (): Promise<string> => {
-        const usedClasses: Set<string> = new Set();
-        document.querySelectorAll('*').forEach(el => {
-            el.classList.forEach(cls => usedClasses.add(cls));
-        });
-        const styleSheets = Array.from(document.styleSheets);
-        const extractedCSSSet = new Set<string>();
-        const dynamicClassPattern = /^([a-zA-Z-]+)\[(.*?)\]$/;
-        styleSheets.forEach(sheet => {
-            try {
-                const rules = sheet.cssRules;
-                for (const rule of rules) {
-                    const ruleText = rule.cssText;
-                    usedClasses.forEach((cls) => {
-                        if (ruleText.includes(`.${cls}`)) {
-                            extractedCSSSet.add(ruleText);
-                        }
-
-                        const match = cls.match(dynamicClassPattern);
-                        if (match) {
-                            const baseClass = match[1];  // 例: text-
-                            if (ruleText.includes(`.${baseClass}`)) {
-                                extractedCSSSet.add(ruleText);
-                            }
-                        }
-                    });
-                }
-            } catch (e) {
-                console.warn('Error accessing stylesheet:', sheet.href);
-            }
-        });
-        return Array.from(extractedCSSSet).join('\n');  // Setから配列に変換して結合
-    }
-
     const handleHtmlDownload = async () => {
         try {
             const confirmMessage = `Download this html?`;
@@ -434,120 +374,6 @@ ${htmlContent}
         }
     };
 
-    const handleEpubDownload = async () => {
-        try {
-            const confirmMessage = `Convert to epub and download?`;
-            if (!window.confirm(confirmMessage)) { return; }
-
-            if (contentRef.current) {
-                const htmlContent = contentRef.current.innerHTML;
-                const cssContent = await extractCSS();
-                const fullHtml = `
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-</head>
-<body>
-<div class="container flex justify-center mx-auto">
-${htmlContent}
-</div>
-</body>
-</html>
-`;
-
-                const addConmaCss = (css: string): string => {
-                    const newCss = css.replace(/rgb\((\d+)\s+(\d+)\s+(\d+)(\s*\/\s*[^)]+)?\)/g, (match, r, g, b, alpha) => {
-                        // アルファ値が存在する場合はそのままにしつつ、RGBの値をカンマで区切る
-                        if (alpha) {
-                            return `rgb(${r}, ${g}, ${b}${alpha})`;
-                        }
-                        // アルファ値がない場合は通常のRGBをカンマ区切りにする
-                        return `rgb(${r}, ${g}, ${b})`;
-                    });
-                    return newCss;
-                }
-
-                const convertCss = (css: string) => {
-                    return css.replace(/rgb\((\d+)\s(\d+)\s(\d+)\s\/\svar\(--tw-text-opacity\)\)/g, 'rgb($1, $2, $3)');
-                };
-
-                const convertCss2 = (css: string) => {
-                    return css
-                        // var(--tw-space-x-reverse)を削除し、calcの内容を正しく保つ
-                        .replace(/var\(--tw-space-x-reverse\)/g, '1')
-                        .replace(/var\(--tw-space-y-reverse\)/g, '1')
-                        .replace(/var\(--tw-[a-zA-Z-]+\)/g, '1')
-                        // rgb()の透明度部分を削除し、標準のrgbフォーマットに変換
-                        .replace(/rgb\((\d+)\s(\d+)\s(\d+)\s\/\s1\)/g, 'rgb($1, $2, $3)')
-                        // calc()内のvar(--tw-*)を削除して計算式を調整
-                        .replace(/calc\(([\d.]+rem)\s\*\s1\)/g, 'calc($1)')
-                        .replace(/calc\(([\d.]+rem)\s\*\scalc\(1\s-\s1\)\)/g, 'calc($1 * 1)')
-                        // var(--tw-border-opacity)を削除し、rgb()の形式を正しく保つ
-                        .replace(/rgb\((\d+)\s(\d+)\s(\d+)\s\/\svar\(--tw-border-opacity\)\)/g, 'rgb($1, $2, $3)');
-                };
-
-                const removeCustomProperties = (css: string) => {
-                    return css.replace(/--[\w-]+:\s*[^;]+;/g, '').trim();
-                };
-
-                const reqData = {
-                    title: bookData.title,
-                    author: bookData.author,
-                    contentType: contentType,
-                    fullHtml: fullHtml,
-                    fullCss: convertCss2(removeCustomProperties(tailwindDefaultCss + cssContent)),
-                }
-
-                const token = localStorage.getItem('token');
-                const res: AxiosResponse<Blob> = await axios.post(
-                    API_ENDPOINTS.postEpub(),
-                    reqData,
-                    {
-                        headers: { Authorization: `Bearer ${token}` },
-                        responseType: 'blob'
-                    }
-                );
-                const downloadUrl = window.URL.createObjectURL(res.data);
-
-                // ダウンロードリンクを作成してクリック
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                link.download = `${bookData.title}.epub`; // ダウンロード時のファイル名を指定
-                document.body.appendChild(link);
-                link.click();
-
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(downloadUrl);
-
-                // // EPUBオプションを設定
-                // const options: EPUB.Options = {
-                //     title: bookData.title, // EPUBのタイトル
-                //     author: bookData.author, // EPUBの作者
-                //     content: [
-                //         {
-                //             title: contentType, // 章のタイトル
-                //             data: fullHtml, // HTMLコンテンツ
-                //         },
-                //     ],
-                //     lang: 'ja',
-                //     version: 3 as 3,
-                //     tocTitle: '目次',
-                //     verbose: true,
-                //     appendChapterTitles: false,
-                // };
-                // // EPUBを生成し、ダウンロード
-                // new EPUB(options).promise.then(() => {
-                //     setSuccessMessage('EPUB file has been downloaded!');
-                // }).catch(err => {
-                //     console.error('Failed to download', err);
-                // });
-
-            }
-        } catch (error) {
-            setErrorMessage("Failed to download");
-        }
-    }
-
     const handleToggleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setCssEditorVisible(e.target.checked);
     };
@@ -563,11 +389,6 @@ ${htmlContent}
         } finally {
             setLoadingTxt('');
         }
-    }
-
-    const handleChangeCss = (value: string) => {
-        handleContentsChange('defaultStyle', value);
-        setCssContent(value);
     }
 
     const extractHeadersAndCode = (markdownText: string): string => {
@@ -599,6 +420,94 @@ ${htmlContent}
             }
         }
         return newMarkdown;
+    };
+
+    const uploadImage = async (file: File): Promise<string | undefined> => {
+        if (!file) {
+            return;
+        }
+
+        // ファイル拡張子の取得
+        const extension: string = getFileExtension(file.name);
+        if (!extension) {
+            setErrorMessage('Invalid extension.');
+            return;
+        }
+
+        // サポートされていない拡張子の場合は jpg に変換
+        const validExtensions = ['jpg', 'png', 'webp'];
+        const coverExtension = validExtensions.includes(extension) ? extension : 'jpg';
+
+        // ファイル名を生成
+        const coverTitle = `${bookData.title}_image.${coverExtension}`;
+
+        // FormDataにファイルを追加
+        const formData = new FormData();
+        formData.append('image', file, coverTitle);
+        formData.append('directory', 'images');
+
+        // 認証トークンを取得
+        const token = localStorage.getItem('token');
+
+        try {
+            // 画像アップロードのリクエスト
+            const res: AxiosResponse<string> = await axios.post<string>(
+                `${API_ENDPOINTS.uploadImage()}`,
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            return res.data;
+        } catch (error) {
+            setErrorMessage('Image upload failed.');
+            console.error(error);
+        }
+    };
+
+    const handleDrop = async (e: DragEvent<HTMLTextAreaElement>) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+
+        // 画像ファイルかチェック
+        if (file && file.type.startsWith("image/")) {
+            try {
+                // 画像をアップロードし、URLを取得
+                const imageUrl = await uploadImage(file);
+                if (!imageUrl) { return; }
+
+                // カーソル位置を取得
+                const textarea = textareaRef.current;
+                if (!textarea) { return; }
+                const startPos = textarea.selectionStart;
+                const endPos = textarea.selectionEnd;
+
+                // マークダウン形式で画像URLを挿入
+                const markdownWithImage =
+                    previewContent.substring(0, startPos) + '\n' +
+                    `![image](${imageUrl})` + '\n' +
+                    previewContent.substring(endPos);
+
+                // 更新
+                handleContentsChange(contentType, markdownWithImage)
+
+                // カーソル位置を調整
+                setTimeout(() => {
+                    textarea.selectionStart = textarea.selectionEnd = startPos + `![image](${imageUrl})`.length;
+                    textarea.focus();
+                }, 0);
+            } catch (error) {
+                console.error("Image upload failed", error);
+                setErrorMessage("Image upload failed");
+            }
+        }
+    };
+
+    const handleDragOver = (e: DragEvent<HTMLTextAreaElement>) => {
+        e.preventDefault();  // ドロップを許可
     };
 
     return (
@@ -672,7 +581,6 @@ ${htmlContent}
                         </button>
                     </div>
                 </div>
-
                 <div className="h-8 flex items-center p-4 pl-5">
                     <label className="inline-flex items-center cursor-pointer">
                         <input
@@ -686,32 +594,24 @@ ${htmlContent}
                         <span className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">CSS Editor</span>
                     </label>
                 </div>
-
                 <div className="flex flex-col pl-4 pr-4 pb-4 pt-1 h-full md:flex-row">
-
                     <div className="w-full md:w-1/2 pr-2 h-full relative">
                         <textarea
+                            ref={textareaRef}
                             name="markdown"
                             placeholder={`${placeHolderText ? placeHolderText : "Markdown content"}`}
                             onChange={handleInputChange}
-                            value={bookData[contentType]}
+                            defaultValue={bookData[contentType]}
+                            onDrop={handleDrop}
+                            onDragOver={handleDragOver}
                             className="w-full h-[91%] p-2 border border-gray-300 rounded"
                         ></textarea>
 
                         {cssEditorVisible && (
-                            // <textarea
-                            //     name="cssEditor"
-                            //     placeholder="CSS content"
-                            //     onChange={(e) => handleChangeCss(e.target.value)}
-                            //     value={bookData.defaultStyle}
-                            //     className="absolute top-0 -left-1 z-30 w-[calc(100%-0.25rem)] h-[91%] p-2 pr-0 border border-gray-300 rounded"
-                            // ></textarea>
                             <div
                                 className="absolute top-0 -left-1 z-30 w-[calc(100%-0.25rem)] h-[91%] overflow-auto pr-0 border border-gray-300 rounded"
                                 ref={editorRef}  // エディタを配置するDOMを指定
-                            >
-                                {/* <ReactCodeMirror value={value} onChange={onChange} /> */}
-                            </div>
+                            ></div>
                         )}
                     </div>
 
@@ -725,11 +625,10 @@ ${htmlContent}
                                     remarkPlugins={[remarkGfm]}  // GitHub Flavored Markdown (GFM)をサポート
                                     components={reactMarkdownComponents}
                                 >
-                                    {markdownContent}
+                                    {previewContent}
                                 </ReactMarkdown>
                             </div>
                         </div>
-                        {/* <iframe ref={iframeRef} className="w-full h-full border-gray-300 rounded"></iframe> */}
                     </div>
                 </div>
             </div >
@@ -746,3 +645,189 @@ ${htmlContent}
 };
 
 export default MarkdownEditor;
+
+
+
+
+
+
+
+
+// Todo: Epub
+// const handleEpubDownload = async () => {
+//     try {
+//         const confirmMessage = `Convert to epub and download?`;
+//         if (!window.confirm(confirmMessage)) { return; }
+
+//         if (contentRef.current) {
+//             const htmlContent = contentRef.current.innerHTML;
+//             const cssContent = await extractCSS();
+//             const fullHtml = `
+// <html lang="ja">
+// <head>
+// <meta charset="UTF-8">
+// </head>
+// <body>
+// <div class="container flex justify-center mx-auto">
+// ${htmlContent}
+// </div>
+// </body>
+// </html>
+// `;
+
+//             const addConmaCss = (css: string): string => {
+//                 const newCss = css.replace(/rgb\((\d+)\s+(\d+)\s+(\d+)(\s*\/\s*[^)]+)?\)/g, (match, r, g, b, alpha) => {
+//                     // アルファ値が存在する場合はそのままにしつつ、RGBの値をカンマで区切る
+//                     if (alpha) {
+//                         return `rgb(${r}, ${g}, ${b}${alpha})`;
+//                     }
+//                     // アルファ値がない場合は通常のRGBをカンマ区切りにする
+//                     return `rgb(${r}, ${g}, ${b})`;
+//                 });
+//                 return newCss;
+//             }
+
+//             const convertCss = (css: string) => {
+//                 return css.replace(/rgb\((\d+)\s(\d+)\s(\d+)\s\/\svar\(--tw-text-opacity\)\)/g, 'rgb($1, $2, $3)');
+//             };
+
+//             const convertCss2 = (css: string) => {
+//                 return css
+//                     // var(--tw-space-x-reverse)を削除し、calcの内容を正しく保つ
+//                     .replace(/var\(--tw-space-x-reverse\)/g, '1')
+//                     .replace(/var\(--tw-space-y-reverse\)/g, '1')
+//                     .replace(/var\(--tw-[a-zA-Z-]+\)/g, '1')
+//                     // rgb()の透明度部分を削除し、標準のrgbフォーマットに変換
+//                     .replace(/rgb\((\d+)\s(\d+)\s(\d+)\s\/\s1\)/g, 'rgb($1, $2, $3)')
+//                     // calc()内のvar(--tw-*)を削除して計算式を調整
+//                     .replace(/calc\(([\d.]+rem)\s\*\s1\)/g, 'calc($1)')
+//                     .replace(/calc\(([\d.]+rem)\s\*\scalc\(1\s-\s1\)\)/g, 'calc($1 * 1)')
+//                     // var(--tw-border-opacity)を削除し、rgb()の形式を正しく保つ
+//                     .replace(/rgb\((\d+)\s(\d+)\s(\d+)\s\/\svar\(--tw-border-opacity\)\)/g, 'rgb($1, $2, $3)');
+//             };
+
+//             const removeCustomProperties = (css: string) => {
+//                 return css.replace(/--[\w-]+:\s*[^;]+;/g, '').trim();
+//             };
+
+//             const reqData = {
+//                 title: bookData.title,
+//                 author: bookData.author,
+//                 contentType: contentType,
+//                 fullHtml: fullHtml,
+//                 fullCss: convertCss2(removeCustomProperties(tailwindDefaultCss + cssContent)),
+//             }
+
+//             const token = localStorage.getItem('token');
+//             const res: AxiosResponse<Blob> = await axios.post(
+//                 API_ENDPOINTS.postEpub(),
+//                 reqData,
+//                 {
+//                     headers: { Authorization: `Bearer ${token}` },
+//                     responseType: 'blob'
+//                 }
+//             );
+//             const downloadUrl = window.URL.createObjectURL(res.data);
+
+//             // ダウンロードリンクを作成してクリック
+//             const link = document.createElement('a');
+//             link.href = downloadUrl;
+//             link.download = `${bookData.title}.epub`; // ダウンロード時のファイル名を指定
+//             document.body.appendChild(link);
+//             link.click();
+
+//             document.body.removeChild(link);
+//             window.URL.revokeObjectURL(downloadUrl);
+
+//             // // EPUBオプションを設定
+//             // const options: EPUB.Options = {
+//             //     title: bookData.title, // EPUBのタイトル
+//             //     author: bookData.author, // EPUBの作者
+//             //     content: [
+//             //         {
+//             //             title: contentType, // 章のタイトル
+//             //             data: fullHtml, // HTMLコンテンツ
+//             //         },
+//             //     ],
+//             //     lang: 'ja',
+//             //     version: 3 as 3,
+//             //     tocTitle: '目次',
+//             //     verbose: true,
+//             //     appendChapterTitles: false,
+//             // };
+//             // // EPUBを生成し、ダウンロード
+//             // new EPUB(options).promise.then(() => {
+//             //     setSuccessMessage('EPUB file has been downloaded!');
+//             // }).catch(err => {
+//             //     console.error('Failed to download', err);
+//             // });
+
+//         }
+//     } catch (error) {
+//         setErrorMessage("Failed to download");
+//     }
+// }
+
+// Example: Markdown Components
+// const reactMarkdownComponentsTw: Components = {
+//     h1: ({ node, ...props }) => <h1 className="text-blue-900 font-bold text-[60pt] my-6" {...props} />,
+//     h2: ({ node, ...props }) => <h2 className="text-2xl font-bold text-left border-b-4 border-blue-800 pt-4 pb-1 my-6" {...props} >
+//         <span className="bg-yellow-200 text-blue-800 font-bold text-[30pt] inline-block p-2">{props.children}</span>
+//     </h2>,
+//     h3: ({ node, ...props }) => <h3 className="text-xl font-medium text-left border-b-4 border-blue-800 pt-4 pb-1 my-4" {...props}>
+//         <span className="text-blue-800 font-bold text-xl">{props.children}</span>
+//     </h3>,
+//     h4: ({ node, ...props }) => <h4 className="text-lg font-medium text-left border-b-2 border-blue-800 pt-4 pb-1 my-4" {...props}>
+//         <span className="text-blue-800">{props.children}</span>
+//     </h4>,
+//     p: ({ node, ...props }) => <p className="text-base leading-relaxed my-2" {...props} />,
+//     a: ({ node, ...props }) => <a className="text-blue-600 hover:underline" {...props} />,
+//     ul: ({ node, ...props }) => <ul className="list-disc list-inside my-4" {...props} />,
+//     ol: ({ node, ...props }) => <ol className="list-decimal list-inside my-4" {...props} />,
+//     li: ({ node, ...props }) => <li className="my-1" {...props} />,
+//     blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4" {...props} />,
+//     pre: ({ node, ...props }) => <pre className="bg-gray-100 rounded p-4 my-4 overflow-x-auto" {...props} />,
+//     code: ({ node, ...props }) => <code className="bg-gray-100 p-1 rounded" {...props} />,
+//     table: ({ node, ...props }) => <table className="table-auto border-collapse border border-gray-400 my-4" {...props} />,
+//     thead: ({ node, ...props }) => <thead className="bg-gray-200" {...props} />,
+//     tr: ({ node, ...props }) => <tr className="border-t border-gray-300" {...props} />,
+//     th: ({ node, ...props }) => <th className="border px-4 py-2" {...props} />,
+//     td: ({ node, ...props }) => <td className="border px-4 py-2" {...props} />,
+// }
+
+// Example: iframe
+// const appliesToIframe = () => {
+//     if (iframeRef.current) {
+//         const iframeDocument = iframeRef.current.contentDocument;
+//         if (iframeDocument) {
+//             // ReactMarkdownをHTMLに変換する
+//             const renderedMarkdown = renderToString(
+//                 <ReactMarkdown
+//                     rehypePlugins={[rehypeHighlight]}
+//                     remarkPlugins={[remarkGfm]}  // GitHub Flavored Markdown (GFM)をサポート
+//                     components={reactMarkdownComponents}
+//                 >
+//                     {markdownContent}
+//                 </ReactMarkdown>
+//             );
+
+//             // iframe内のHTMLを更新
+//             iframeDocument.open();
+//             iframeDocument.write(`
+//           <html lang="ja">
+//             <head>
+//                 <meta charset="UTF-8">
+//                 <!-- <link rel="stylesheet" href="https://unpkg.com/tailwindcss@2.0.0/dist/tailwind.min.css" /> -->
+//             </head>
+//             <style>${cssContent}</style>
+//             <body>
+//               <div class="prose" id="all-wrapper">
+//                 ${renderedMarkdown}
+//               </div>
+//             </body>
+//           </html>
+//         `);
+//             iframeDocument.close();
+//         }
+//     }
+// }

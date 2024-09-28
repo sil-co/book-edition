@@ -11,10 +11,10 @@ import { useGlobalState } from '../../context/GlobalStateProvider';
 import HtmlEditor from '../Editor/HtmlEditor';
 import MarkdownEditor from '../Editor/MarkdownEditor';
 import ImageGallery from '../Editor/ImageGallery';
-import { API_ENDPOINTS, BASE_URL, BASE_SAMPLE_URL } from "../../api/urls";
+import { API_ENDPOINTS, BASE_SAMPLE_URL } from "../../api/urls";
 import { checkIsGpt } from '../../api/gpt';
 import * as BT from '../../types/BookTypes';
-import * as OT from '../../types/OpenApiTypes';
+import { getFileExtension } from '../../utility/utility';
 
 const EditBook = () => {
     const { id } = useParams();
@@ -22,7 +22,7 @@ const EditBook = () => {
     const { setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
 
     let initData: BT.BookDataType = {
-        title: "", // 初期値を空文字に設定
+        title: "",
         author: "",
         genre: "",
         isPublished: false,
@@ -37,7 +37,6 @@ const EditBook = () => {
     const [isHtmlUsageOpen, setIsHtmlUsageOpen] = useState<boolean>(false);
     const [isMdSummaryOpen, setIsMdSummaryOpen] = useState<boolean>(false);
     const [isImageEditorOpen, setIsImageEditorOpen] = useState<boolean>(false);
-    const [isSelectModalOpen, setIsSelectModalOpen] = useState<boolean>(false);
     const [isIntroductionOpen, setIsIntroductionOpen] = useState<boolean>(false);
     const [isAfterEndOpen, setIsAfterEndOpen] = useState<boolean>(false);
     const [isOtherBooksOpen, setIsOtherBooksOpen] = useState<boolean>(false);
@@ -116,47 +115,6 @@ const EditBook = () => {
         const newImagePath = `${imagePath}?t=${new Date().getTime()}`;
         if (previewImageRef.current) { previewImageRef.current.src = newImagePath; }
     }
-
-    const isChangedCoverImage = async (): Promise<boolean> => {
-        const originalImageBuffer = await (await fetch(unEditedData.coverImageId || '')).blob().then((b) => b.arrayBuffer());
-        const newImageBuffer = await (await fetch(selectedImageId)).blob().then((b) => b.arrayBuffer());
-
-        if (
-            originalImageBuffer.byteLength === newImageBuffer.byteLength &&
-            new Uint8Array(originalImageBuffer).every((value, index) => value === new Uint8Array(newImageBuffer)[index])
-        ) {
-            return false;
-        } else {
-            return true;
-        }
-    }
-
-    const uploadImage = async (): Promise<BT.CoverImageData | undefined> => {
-        if (!selectedImageId) { return; }
-        let extension: string = getFileExtension(selectedImageId);
-        if (!extension) { setErrorMessage('Invalid extension.'); return; }
-        if (extension !== 'jpg' && extension !== 'png' && extension !== 'webp') { extension = 'jpg'; }
-        const coverTitle = `${editBookData.title}_cover.${extension}`;
-
-        const data = await fetch(selectedImageId);
-        const blob = await data.blob();
-        const formData = new FormData();
-        formData.append('cover', blob, coverTitle);
-
-        const token = localStorage.getItem('token');
-        const res: AxiosResponse<BT.CoverImageData> = await axios.post<BT.CoverImageData>(
-            `${API_ENDPOINTS.uploadCoverImage()}`,
-            formData,
-            {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    Authorization: `Bearer ${token}`
-                },
-            },
-        );
-
-        return res.data;
-    };
 
     const requiredCheck = (): BT.RequiredFieldType | '' => {
         const requiredFields: BT.RequiredFieldType[] = ['id', 'title', 'author', 'genre'];
@@ -267,7 +225,7 @@ const EditBook = () => {
 
             // propertyがidのみの場合
             const keys = Object.keys(extractedData).filter(key => key !== 'id');
-            const keysToDisplay: string[] = keys.map(key => textToDisplay(key));
+            let keysToDisplay: string[] = keys.map(key => textToDisplay(key));
             // const isChangedCover = await isChangedCoverImage();
             if (keys.length === 0) { return setWarningMessage("WARNING: Not Edited"); }
 
@@ -292,9 +250,10 @@ const EditBook = () => {
                     [key]: res.data[key as keyof BT.BookDataType]
                 }));
             });
-            const updatedField: string = Object.keys(res.data).filter(key => key !== 'id').join(", ");
+            const updatedField = Object.keys(res.data).filter(key => key !== 'id');
+            keysToDisplay = updatedField.map(key => textToDisplay(key));
 
-            setSuccessMessage(`${updatedField} Updated Successfully! `);
+            setSuccessMessage(`${keysToDisplay.join(', ')} Updated Successfully! `);
         } catch (e) {
             setErrorMessage("Failed to Update");
         } finally {
@@ -466,14 +425,6 @@ const EditBook = () => {
         }
     }
 
-    const toggleSelectModal = () => {
-        if (!isSelectModalOpen) {
-            setIsSelectModalOpen(true);
-        } else {
-            setIsSelectModalOpen(false);
-        }
-    }
-
     const toggleAfterEndEditor = () => {
         if (!isAfterEndOpen) {
             setIsAfterEndOpen(true);
@@ -511,10 +462,6 @@ const EditBook = () => {
         setImageModalSrc(imgElement.src || '');
     };
 
-    const closeModal = () => {
-        setImageModalSrc('');
-    };
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const file = e.target.files[0];
@@ -543,31 +490,17 @@ const EditBook = () => {
         const file = e.dataTransfer.files[0]; // ドロップされたファイルを取得
         if (file) {
             setFileName(file.name);
-
             // DataTransferオブジェクトを使用してFileListを作成
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
-
-            // プレビューURLを解放してから新しく設定
-            // if (imagePreviewId) {
-            //     URL.revokeObjectURL(imagePreviewId);
-            // }
-
-            const filePreview = URL.createObjectURL(file);
-            await uploadPreviewImage(filePreview);
+            await uploadPreviewImage(file);
         }
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const file = e.target.files[0];
-
-            // if (imagePreviewId) {
-            //     URL.revokeObjectURL(imagePreviewId);
-            // }
-
-            const filePreview = URL.createObjectURL(file);
-            await uploadPreviewImage(filePreview);
+            await uploadPreviewImage(file);
         }
     };
 
@@ -576,42 +509,54 @@ const EditBook = () => {
         window.open(url, '_blank', 'noopener,noreferrer'); // 別タブで開く
     };
 
-    const uploadPreviewImage = async (filePreview: string): Promise<BT.CoverImageData | undefined> => {
-        if (!filePreview) { return; }
-        let extension: string = getFileExtension(filePreview);
-        if (!extension) { setErrorMessage('Invalid extension.'); return; }
-        if (extension !== 'jpg' && extension !== 'png' && extension !== 'webp') { extension = 'jpg'; }
-        const coverTitle = `${editBookData.title}_cover.${extension}`;
+    const uploadPreviewImage = async (file: File): Promise<BT.CoverImageData | undefined> => {
+        if (!file) {
+            return;
+        }
 
-        const data = await fetch(filePreview);
-        const blob = await data.blob();
+        // ファイル拡張子の取得
+        const extension: string = getFileExtension(file.name);
+        if (!extension) {
+            setErrorMessage('Invalid extension.');
+            return;
+        }
+
+        // サポートされていない拡張子の場合は jpg に変換
+        const validExtensions = ['jpg', 'png', 'webp'];
+        const coverExtension = validExtensions.includes(extension) ? extension : 'jpg';
+
+        // ファイル名を生成
+        const coverTitle = `${editBookData.title}_cover.${coverExtension}`;
+
+        // FormDataにファイルを追加
         const formData = new FormData();
-        formData.append('cover', blob, coverTitle);
+        formData.append('cover', file, coverTitle);
+        formData.append('directory', 'cover');
 
+        // 認証トークンを取得
         const token = localStorage.getItem('token');
-        const res: AxiosResponse<BT.CoverImageData> = await axios.post<BT.CoverImageData>(
-            `${API_ENDPOINTS.uploadCoverImage()}`,
-            formData,
-            {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    Authorization: `Bearer ${token}`
-                },
-            },
-        );
-        setImagePreviewId(res.data.id);
 
-        // if (previewImageRef.current) {
-        //     // const data = await fetch(previewImageRef.current.src);
-        //     // const blob = await data.blob();
-        //     // const copyImagePreview = URL.createObjectURL(blob);
-        //     // URL.revokeObjectURL(previewImageRef.current.src);
-        //     // previewImageRef.current.src = res.data.imagePath;
-        //     const newImagePath = `${res.data.imagePath}?t=${new Date().getTime()}`;
-        //     previewImageRef.current.src = newImagePath;
-        // }
-        setSuccessMessage('The image was uploaded.');
-    }
+        try {
+            // 画像アップロードのリクエスト
+            const res: AxiosResponse<BT.CoverImageData> = await axios.post<BT.CoverImageData>(
+                `${API_ENDPOINTS.uploadCoverImage()}`,
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            // 成功時の処理
+            setImagePreviewId(res.data.id);
+            setSuccessMessage('The image was uploaded.');
+        } catch (error) {
+            setErrorMessage('Image upload failed.');
+            console.error(error);
+        }
+    };
 
     const usePreviewImage = async (e: React.MouseEvent<HTMLImageElement>) => {
         e.preventDefault();
@@ -627,11 +572,6 @@ const EditBook = () => {
         setSelectedImageId(imagePreviewId);
         setImagePreviewId('');
     }
-
-    const getFileExtension = (url: string): string => {
-        const extension = url.split('.').pop()?.split(/\#|\?/)[0];
-        return extension || '';
-    };
 
     const handleDownloadClick = async () => {
         if (!window.confirm(`Download selected image?`)) { return; }
@@ -655,35 +595,7 @@ const EditBook = () => {
         }
     };
 
-    const generateImageGpt = async () => {
-        try {
-            const confirmMessage = `Do you generate image using GPT?`;
-            if (!window.confirm(confirmMessage)) { return; }
-            setLoadingTxt(`Image Generating...`);
-            const gptImageReqBody: OT.GptImageReqBody = {
-                id: String(editBookData.id),
-                title: editBookData.title,
-                contentType: 'coverImageId',
-                model: "dall-e-3",
-                prompt: ``,
-                size: "1024x1792",
-            }
-            const res: AxiosResponse<string> = await axios.post<string>(API_ENDPOINTS.generateImageCoverGpt(), gptImageReqBody);
-            const data = await fetch(`${BASE_URL}${res.data}`);
-            const blob = await data.blob();
-            const newImagePreview = URL.createObjectURL(blob);
-            URL.revokeObjectURL(imagePreviewId);
-            setImagePreviewId(newImagePreview);
-            setErrorMessage('Output Image for GPT Successfully!');
-        } catch (e) {
-            setErrorMessage('Failed GPT Output. Please try again.');
-        } finally {
-            setLoadingTxt('');
-        }
-    }
-
     const setSampleImageOnPreview = async () => {
-        // setImagePreviewId('');
         if (previewImageRef.current) { previewImageRef.current.src = BASE_SAMPLE_URL; }
     }
 
@@ -804,7 +716,6 @@ const EditBook = () => {
                             onChange={handleInputChange}
                             value={editBookData.toc || ''}
                             className="hidden"
-                            // className="w-full p-2 border border-gray-300 rounded h-24"
                             disabled={isDisabled}
                         ></textarea>
                         <button
@@ -950,22 +861,6 @@ const EditBook = () => {
                             className="hidden"
                             disabled={isDisabled}
                         ></textarea>
-                        {/* <button
-                            type="button"
-                            onClick={toggleImageEditor}
-                            className={`relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-green-400 to-blue-600 group-hover:from-green-400 group-hover:to-blue-600 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-green-200 dark:focus:ring-green-800
-                                ${isDisabled && "cursor-not-allowed"}
-                            `}
-                            disabled={isDisabled}
-                        >
-                            <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
-                                {isDisabled ? (
-                                    <FaSpinner className="animate-spin inline-block" />
-                                ) : (
-                                    'Open Image Gallery'
-                                )}
-                            </span>
-                        </button> */}
                         <div className="flex mt-0 space-x-4" >
                             <div
                                 className={`relative first:mt-0 w-40 h-40 bg-gray-100 rounded-md flex items-center justify-center
@@ -1276,108 +1171,166 @@ const EditBook = () => {
                 </form>
             </div >
 
-            <MarkdownEditor
-                bookData={editBookData}
-                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"introduction"}
-                isOpen={isIntroductionOpen}
-                editorTitle={"Markdown Introduction Editor"}
-                onClose={toggleIntroductionEditor}
-                gptButton={true}
-                placeHolderText={"Introduction to the book"}
-            />
+            {isIntroductionOpen && (
+                <MarkdownEditor
+                    bookData={editBookData}
+                    handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"introduction"}
+                    isOpen={isIntroductionOpen}
+                    editorTitle={"Markdown Introduction Editor"}
+                    onClose={toggleIntroductionEditor}
+                    gptButton={true}
+                    placeHolderText={"Introduction to the book"}
+                />
+            )}
 
-            <MarkdownEditor
-                bookData={editBookData}
-                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"toc"}
-                isOpen={isMdTocOpen}
-                editorTitle={"Markdown Table Of Contents Editor"}
-                onClose={toggleMdTocEditor}
-                gptButton={true}
-            />
+            {isMdTocOpen && (
+                <MarkdownEditor
+                    bookData={editBookData}
+                    handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"toc"}
+                    isOpen={isMdTocOpen}
+                    editorTitle={"Markdown Table Of Contents Editor"}
+                    onClose={toggleMdTocEditor}
+                    gptButton={true}
+                />
+            )}
 
-            <MarkdownEditor
-                bookData={editBookData}
-                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"mdBody"}
-                isOpen={isMdBodyOpen}
-                editorTitle={"Markdown Body Editor"}
-                onClose={toggleMdBodyEditor}
-                gptButton={true}
-                loadable={true}
-            />
+            {isMdBodyOpen && (
+                <MarkdownEditor
+                    bookData={editBookData}
+                    handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"mdBody"}
+                    isOpen={isMdBodyOpen}
+                    editorTitle={"Markdown Body Editor"}
+                    onClose={toggleMdBodyEditor}
+                    gptButton={true}
+                    loadable={true}
+                />
+            )}
 
-            <HtmlEditor
-                bookData={editBookData}
-                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"htmlBody"}
-                isOpen={isHtmlBodyOpen}
-                editorTitle={"Html Body Editor"}
-                onClose={toggleHtmlBodyEditor}
-            />
+            {isHtmlBodyOpen && (
+                <HtmlEditor
+                    bookData={editBookData}
+                    handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"htmlBody"}
+                    isOpen={isHtmlBodyOpen}
+                    editorTitle={"Html Body Editor"}
+                    onClose={toggleHtmlBodyEditor}
+                />
+            )}
 
-            <MarkdownEditor
-                bookData={editBookData}
-                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"mdUsage"}
-                isOpen={isMdUsageOpen}
-                editorTitle={"Markdown Usage Editor"}
-                onClose={toggleMdUsageEditor}
-                extract={true}
-            />
 
-            <HtmlEditor
-                bookData={editBookData}
-                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"htmlUsage"}
-                isOpen={isHtmlUsageOpen}
-                editorTitle={"Html Usage Editor"}
-                onClose={toggleHtmlUsageEditor}
-            />
+            {isMdUsageOpen && (
+                <MarkdownEditor
+                    bookData={editBookData}
+                    handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"mdUsage"}
+                    isOpen={isMdUsageOpen}
+                    editorTitle={"Markdown Usage Editor"}
+                    onClose={toggleMdUsageEditor}
+                    extract={true}
+                />
+            )}
 
-            <MarkdownEditor
-                bookData={editBookData}
-                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"summary"}
-                isOpen={isMdSummaryOpen}
-                editorTitle={"Markdown Summary Editor"}
-                onClose={toggleMdSummaryEditor}
-                gptButton={true}
-                placeHolderText={"Book summary (as shown on the kindle page)"}
-            />
+            {isHtmlUsageOpen && (
+                <HtmlEditor
+                    bookData={editBookData}
+                    handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"htmlUsage"}
+                    isOpen={isHtmlUsageOpen}
+                    editorTitle={"Html Usage Editor"}
+                    onClose={toggleHtmlUsageEditor}
+                />
+            )}
 
-            <MarkdownEditor
-                bookData={editBookData}
-                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"afterEnd"}
-                isOpen={isAfterEndOpen}
-                editorTitle={"Markdown AfterEnd Editor"}
-                onClose={toggleAfterEndEditor}
-                gptButton={true}
-                placeHolderText={"Afterword, at the end of the book"}
-            />
+            {isMdSummaryOpen && (
+                <MarkdownEditor
+                    bookData={editBookData}
+                    handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"summary"}
+                    isOpen={isMdSummaryOpen}
+                    editorTitle={"Markdown Summary Editor"}
+                    onClose={toggleMdSummaryEditor}
+                    gptButton={true}
+                    placeHolderText={"Book summary (as shown on the kindle page)"}
+                />
+            )}
 
-            <MarkdownEditor
-                bookData={editBookData}
-                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"otherBooks"}
-                isOpen={isOtherBooksOpen}
-                editorTitle={"Markdown OtherBooks Editor"}
-                onClose={toggleOtherBooksEditor}
-                placeHolderText={"Introduction of my other books"}
-            />
+            {isAfterEndOpen && (
+                <MarkdownEditor
+                    bookData={editBookData}
+                    handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"afterEnd"}
+                    isOpen={isAfterEndOpen}
+                    editorTitle={"Markdown AfterEnd Editor"}
+                    onClose={toggleAfterEndEditor}
+                    gptButton={true}
+                    placeHolderText={"Afterword, at the end of the book"}
+                />
+            )}
 
-            <ImageGallery
-                bookData={editBookData}
-                handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"coverImageId"}
-                isOpen={isImageEditorOpen}
-                editorTitle={"Image Gallery"}
-                onClose={toggleImageEditor}
-            />
+            {isOtherBooksOpen && (
+                <MarkdownEditor
+                    bookData={editBookData}
+                    handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"otherBooks"}
+                    isOpen={isOtherBooksOpen}
+                    editorTitle={"Markdown OtherBooks Editor"}
+                    onClose={toggleOtherBooksEditor}
+                    placeHolderText={"Introduction of my other books"}
+                />
+            )}
+
+            {isImageEditorOpen && (
+                <ImageGallery
+                    bookData={editBookData}
+                    handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"coverImageId"}
+                    isOpen={isImageEditorOpen}
+                    editorTitle={"Image Gallery"}
+                    onClose={toggleImageEditor}
+                />
+            )}
         </div >
     );
 };
 
 export default EditBook;
+
+
+
+
+
+
+
+
+
+
+
+// const generateImageGpt = async () => {
+//     try {
+//         const confirmMessage = `Do you generate image using GPT?`;
+//         if (!window.confirm(confirmMessage)) { return; }
+//         setLoadingTxt(`Image Generating...`);
+//         const gptImageReqBody: OT.GptImageReqBody = {
+//             id: String(editBookData.id),
+//             title: editBookData.title,
+//             contentType: 'coverImageId',
+//             model: "dall-e-3",
+//             prompt: ``,
+//             size: "1024x1792",
+//         }
+//         const res: AxiosResponse<string> = await axios.post<string>(API_ENDPOINTS.generateImageCoverGpt(), gptImageReqBody);
+//         const data = await fetch(`${BASE_URL}${res.data}`);
+//         const blob = await data.blob();
+//         const newImagePreview = URL.createObjectURL(blob);
+//         URL.revokeObjectURL(imagePreviewId);
+//         setImagePreviewId(newImagePreview);
+//         setErrorMessage('Output Image for GPT Successfully!');
+//     } catch (e) {
+//         setErrorMessage('Failed GPT Output. Please try again.');
+//     } finally {
+//         setLoadingTxt('');
+//     }
+// }

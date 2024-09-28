@@ -26,6 +26,7 @@ export const API_ENDPOINTS = {
     runGptOfMdBody: () => `${BASE_URL}/book/gpt/mdbody`,
     generateImageCoverGpt: () => `${BASE_URL}/book/gpt/cover`,
     generateHtml: () => `${BASE_URL}/book/generate-html`,
+    uploadImage: () => `${BASE_URL}/book/image/upload`,
     uploadCoverImage: () => `${BASE_URL}/book/cover/upload`,
     updateBook: (id: string) => `${BASE_URL}/book/${id}`,
     deleteBook: (id: string) => `${BASE_URL}/book/${id}`,

@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 
 import { GlobalStateProvider } from './context/GlobalStateProvider';
 import { useGlobalState } from './context/GlobalStateProvider';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 // コンポーネントを遅延読み込み
 import { Suspense, lazy } from 'react';
 const MyBooks = lazy(() => import('./components/BookList/MyBooks'));
@@ -70,7 +70,6 @@ const AppContent = () => {
         </>
     );
 };
-
 
 const App = () => {
     return (

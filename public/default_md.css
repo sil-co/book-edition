@@ -16,11 +16,15 @@ body {
 
 @media only screen and (max-width: 600px) {
     #all-wrapper {
+        margin-top: 10px;
         padding: 0 16px 16px 16px;
     }
 }
 
 #all-wrapper h1 {
+    page-break-before: always;
+    break-before: page;
+    margin-top: 10px;
     color: #1c4587;
     font-weight: 700;
     font-size: 50pt;
@@ -32,8 +36,10 @@ body {
 }
 
 #all-wrapper h2 {
+    page-break-before: always;
+    break-before: page;
+    margin-top: 10px;
     padding-top: 5pt;
-    margin: 3px 0 3px 0;
     border-bottom-color: #1c4587;
     border-bottom-width: 3pt;
     padding-bottom: 2pt;
@@ -50,7 +56,9 @@ body {
 }
 
 #all-wrapper h3 {
-    padding-top: 16pt;
+    page-break-before: always;
+    break-before: page;
+    margin-top: 10px;
     border-bottom-color: #1c4587;
     border-bottom-width: 3pt;
     padding-bottom: 2pt;
@@ -66,6 +74,9 @@ body {
 }
 
 #all-wrapper h4 {
+    page-break-before: always;
+    break-before: page;
+    margin-top: 10px;
     padding-top: 14pt;
     border-bottom-color: #1c4587;
     border-bottom-width: 1pt;
@@ -82,34 +93,66 @@ body {
 }
 
 #all-wrapper p {
+    margin-top: 10px;
     font-size: 1em;
-    margin: 3px 0 3px 0;
 }
 
 #all-wrapper img {
+    margin-top: 10px;
     max-width: 100%;
     width: 100%;
 }
 
 #all-wrapper ul {
+    margin-top: 10px;
     list-style-type: none;
     padding: 0;
     margin: 0;
+    font-family: 'Arial', sans-serif; /* フォントを変更 */
 }
 
 #all-wrapper ul li {
-    margin: 10px 0;
-    padding-left: 1em;
+    margin-top: 10px;
+    padding-left: 1.3em;
+    margin-left: 10px;
+    position: relative; /* アイコン用 */
+}
+
+#all-wrapper ul li::before {
+    content: "•"; /* リストアイコン */
+    color: #3498db; /* アイコンの色を青に */
+    font-size: 1.2em;
+    position: absolute;
+    left: 0;
+    top: 0;
+    line-height: 1.5em;
 }
 
 #all-wrapper ul li a {
     text-decoration: none;
     font-weight: bold;
-    font-size: 1em;
+    font-size: 1.1em; /* フォントサイズを少し大きく */
+    color: #2c3e50; /* テキストカラーをダークブルーに */
+    transition: color 0.3s ease, text-decoration 0.3s ease; /* スムーズな変化 */
 }
 
 #all-wrapper ul li a:hover {
     text-decoration: underline;
+    color: #e74c3c; /* ホバー時の色を赤に */
+}
+
+@media (max-width: 600px) {
+    #all-wrapper ul {
+        font-size: 0.9em; /* モバイル向けにフォントサイズを小さく */
+    }
+
+    #all-wrapper ul li {
+        padding-left: 1em;
+    }
+
+    #all-wrapper ul li::before {
+        font-size: 1em;
+    }
 }
 
 #all-wrapper .page-break {

@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+import axios from 'axios';
 import { useCodeMirror } from "@uiw/react-codemirror";
 import { useParams } from 'react-router-dom';
 import { html } from "@codemirror/lang-html"; // HTMLサポートを追加
@@ -8,7 +8,7 @@ import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 import 'highlight.js/styles/github.css';
 
-import { ChangeEvent, useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 
 import { useGlobalState } from '../../context/GlobalStateProvider';
 import { API_ENDPOINTS } from '../../api/urls';
@@ -37,7 +37,7 @@ const HtmlEditor: React.FC<HtmlEditorProps> = ({
     const contentInnerRef = useRef<HTMLDivElement>(null);
     const [markdownContent, setMarkdownContent] = useState<string>("");
     const [isLoad, setIsLoad] = useState<boolean>(false);
-    const { setSuccessMessage, setLoadingTxt, setErrorMessage } = useGlobalState();
+    const { setErrorMessage } = useGlobalState();
     const { setContainer } = useCodeMirror({
         container: editorRef.current,  // エディタをDOMにセット
         value: bookData[contentType],  // 初期値としてHTMLの内容を渡す
