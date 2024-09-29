@@ -3,7 +3,6 @@ body {
     margin: 0;
     padding: 0;
     font-family: "Arial";
-    /* 'Georgia', serif */
     width: 100%;
 }
 
@@ -12,6 +11,7 @@ body {
     max-width: 1080px;
     background-color: #ffffff;
     box-sizing: border-box;
+    margin: auto;
 }
 
 @media only screen and (max-width: 600px) {
@@ -74,8 +74,6 @@ body {
 }
 
 #all-wrapper h4 {
-    page-break-before: always;
-    break-before: page;
     margin-top: 10px;
     padding-top: 14pt;
     border-bottom-color: #1c4587;
@@ -97,30 +95,73 @@ body {
     font-size: 1em;
 }
 
+#all-wrapper p code {
+    background-color: #f5f5f5;
+    color: #d6336c;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+    display: inline-block;
+    margin: 0 2px;
+}
+
 #all-wrapper img {
-    margin-top: 10px;
     max-width: 100%;
     width: 100%;
+    height: auto;
+    display: block;
+    margin: 10px auto;
+    border: 2px solid #ccc;
+    border-radius: 8px;
 }
+
+#all-wrapper ol {
+    margin-top: 10px;
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    counter-reset: list-counter;
+}
+
+#all-wrapper ol li {
+    margin-top: 10px;
+    padding-left: 1.3em;
+    margin-left: 10px;
+    position: relative;
+    counter-increment: list-counter;
+}
+
+#all-wrapper ol li::before {
+    content: counter(list-counter) ". ";
+    color: #1c4587;
+    font-size: 1.2em;
+    position: absolute;
+    left: 0;
+    top: 0;
+    line-height: 1.5em;
+}
+
 
 #all-wrapper ul {
     margin-top: 10px;
     list-style-type: none;
     padding: 0;
     margin: 0;
-    font-family: 'Arial', sans-serif; /* フォントを変更 */
+    font-family: 'Arial', sans-serif;
 }
 
 #all-wrapper ul li {
     margin-top: 10px;
     padding-left: 1.3em;
     margin-left: 10px;
-    position: relative; /* アイコン用 */
+    position: relative;
 }
 
 #all-wrapper ul li::before {
-    content: "•"; /* リストアイコン */
-    color: #3498db; /* アイコンの色を青に */
+    content: "•";
+    color: #1c4587;
     font-size: 1.2em;
     position: absolute;
     left: 0;
@@ -131,19 +172,19 @@ body {
 #all-wrapper ul li a {
     text-decoration: none;
     font-weight: bold;
-    font-size: 1.1em; /* フォントサイズを少し大きく */
-    color: #2c3e50; /* テキストカラーをダークブルーに */
-    transition: color 0.3s ease, text-decoration 0.3s ease; /* スムーズな変化 */
+    font-size: 1.1em;
+    color: #2c3e50;
+    transition: color 0.3s ease, text-decoration 0.3s ease;
 }
 
 #all-wrapper ul li a:hover {
     text-decoration: underline;
-    color: #e74c3c; /* ホバー時の色を赤に */
+    color: #e74c3c;
 }
 
 @media (max-width: 600px) {
     #all-wrapper ul {
-        font-size: 0.9em; /* モバイル向けにフォントサイズを小さく */
+        font-size: 0.9em;
     }
 
     #all-wrapper ul li {
@@ -158,4 +199,19 @@ body {
 #all-wrapper .page-break {
     page-break-before: always;
     break-before: page;
+}
+
+#all-wrapper li.toc-level-2 {
+    margin-left: 0px;
+}
+
+#all-wrapper li.toc-level-3 {
+    margin-left: 20px;
+}
+
+#all-wrapper div.code-wrapper {
+    color: #c9d1d9;
+    background: #0d1117;
+    padding: 5px;
+    max-width: 100%;
 }

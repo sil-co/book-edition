@@ -5,6 +5,7 @@ import { useGlobalState } from '../../context/GlobalStateProvider';
 import * as BT from '../../types/BookTypes';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../../api/urls';
+import MarkdownEditor from '../Editor/MarkdownEditor';
 
 const contentOptions: BT.ContentOption[] = [
     { id: 'title_sm', label: 'Title', columnName: 'title', selected: true },
@@ -17,13 +18,13 @@ const contentOptions: BT.ContentOption[] = [
 ];
 
 const SelectModal = ({
-    selectedBookId,
     isOpen,
     onClose,
+    bookData
 }: {
-    selectedBookId: string;
     isOpen: boolean;
     onClose: () => void;
+    bookData: BT.BookDataRequiredId;
 }) => {
     const [selectedContent, setSelectedContent] = useState<BT.ContentOption[]>(contentOptions);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -62,7 +63,7 @@ const SelectModal = ({
                 API_ENDPOINTS.generateHtml(),
                 {
                     ...contentStatus,
-                    selectedBookId,
+                    bookId: bookData.id,
 
                 },
                 {
@@ -71,12 +72,22 @@ const SelectModal = ({
                 }
             );
             const contentDisposition = res.headers['content-disposition'];
-            let fileName = 'downloaded_file.zip'; // デフォルトのファイル名
-            // Content-Dispositionヘッダーからファイル名を抽出
+            let fileName = `$downloaded_file.zip`; // デフォルトのファイル名
             if (contentDisposition) {
-                const fileNameMatch = contentDisposition.match(/filename\*?=(?:UTF-8'')?(.+)/);
-                if (fileNameMatch && fileNameMatch.length > 1) {
-                    fileName = decodeURIComponent(fileNameMatch[1].replace(/['"]/g, '')); // ファイル名をデコードして取得
+                // UTF-8エンコードされたファイル名を処理
+                const utf8FilenameRegex = /filename\*=UTF-8''([\w%.-]+)/i;
+                const utf8Match = contentDisposition.match(utf8FilenameRegex);
+
+                if (utf8Match && utf8Match[1]) {
+                    fileName = decodeURIComponent(utf8Match[1]);
+                } else {
+                    // 通常のファイル名を処理
+                    const filenameRegex = /filename="?(.+)"?/i;
+                    const match = contentDisposition.match(filenameRegex);
+
+                    if (match && match[1]) {
+                        fileName = match[1].replace(/['"]/g, '');
+                    }
                 }
             }
             // Blobとしてファイルを作成し、ダウンロードリンクを動的に作成
@@ -102,48 +113,60 @@ const SelectModal = ({
     return (
         <>
             {isOpen && (
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20"
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget && onClose) { onClose(); }
-                    }}>
-                    <div className="bg-white rounded-lg p-6 w-96">
-                        <h2 className="text-xl font-bold mb-4 select-none">Choose the content you want to include</h2>
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                            {selectedContent.map(({ id, label, selected }) => (
-                                <div key={id} className="flex items-center space-x-2">
-                                    <input
-                                        type="checkbox"
-                                        id={id}
-                                        checked={selected}
-                                        onChange={() => handleContentChange(id)}
-                                        className="form-checkbox h-5 w-5 text-lime-500"
-                                    />
-                                    <label htmlFor={id} className="text-sm cursor-pointer select-none">{label}</label>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="flex justify-end space-x-2">
-                            <button
-                                className="select-none px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                                onClick={onClose}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleZipDownload}
-                                disabled={isLoading}
-                                className={`px-4 py-2 text-sm font-medium text-white bg-lime-500 rounded-md select-none 
+                <>
+                    <div
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20"
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget && onClose) { onClose(); }
+                        }}>
+                        <div className="bg-white rounded-lg p-6 w-96">
+                            <h2 className="text-xl font-bold mb-4 select-none">Choose the content you want to include</h2>
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                {selectedContent.map(({ id, label, selected }) => (
+                                    <div key={id} className="flex items-center space-x-2">
+                                        <input
+                                            type="checkbox"
+                                            id={id}
+                                            checked={selected}
+                                            onChange={() => handleContentChange(id)}
+                                            className="form-checkbox h-5 w-5 text-lime-500"
+                                        />
+                                        <label htmlFor={id} className="text-sm cursor-pointer select-none">{label}</label>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                                <button
+                                    className="select-none px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                                    onClick={onClose}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleZipDownload}
+                                    disabled={isLoading}
+                                    className={`px-4 py-2 text-sm font-medium text-white bg-lime-500 rounded-md select-none 
                   ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-lime-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500'}`}
-                            >
-                                {isLoading ? (
-                                    <FaSpinner className="animate-spin inline-block mr-2" />
-                                ) : null}
-                                Download Zip
-                            </button>
+                                >
+                                    {isLoading ? (
+                                        <FaSpinner className="animate-spin inline-block mr-2" />
+                                    ) : null}
+                                    Download Zip
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                    {/* <MarkdownEditor
+                        bookData={bookData}
+                        handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => {}}
+                        contentType={"introduction"}
+                        isOpen={true}
+                        editorTitle={"Markdown All Markdown Text"}
+                        onClose={() => {}}
+                        gptButton={true}
+                        placeHolderText={"All Markdown Text to the book"}
+                    /> */}
+                </>
             )}
         </>
     );

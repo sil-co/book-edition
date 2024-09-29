@@ -65,6 +65,20 @@ const EditBook = () => {
     }, []);
 
     useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = 'Are you sure reload?'; // これで警告を表示
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        // Cleanup function: コンポーネントがアンマウントされたときにイベントリスナーを削除
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, []);
+
+    useEffect(() => {
         if (imagePreviewId) { setNewPreviewImage(imagePreviewId); }
     }, [imagePreviewId]);
 
@@ -136,7 +150,7 @@ const EditBook = () => {
             case 'genre':
                 return 'Genre';
             case 'toc':
-                return 'Table_Of_Contents';
+                return 'Table of contents';
             case 'htmlBody':
                 return 'Body(Html)';
             case 'mdBody':
@@ -185,19 +199,26 @@ const EditBook = () => {
     };
 
     const handleBack = async () => {
-        // 編集した箇所のみのプロパティを抽出
-        const extractedData: Partial<BT.BookDataType> = extractEditedData();
+        try {
+            setIsDisabled(true);
+            // 編集した箇所のみのプロパティを抽出
+            const extractedData: Partial<BT.BookDataType> = extractEditedData();
 
-        // propertyがidのみの場合
-        const keys = Object.keys(extractedData).filter(key => key !== 'id');
-        const keysToDisplay: string[] = keys.map(key => textToDisplay(key));
-        if (keys.length > 0) {
-            const confirmMessage = `Back to without saving? \n Update field: \n ${keysToDisplay.join(', ')}`;
-            if (!window.confirm(confirmMessage)) {
-                return;
+            // propertyがidのみの場合
+            const keys = Object.keys(extractedData).filter(key => key !== 'id');
+            const keysToDisplay: string[] = keys.map(key => textToDisplay(key));
+            if (keys.length > 0) {
+                const confirmMessage = `Back to without saving? \n Update field: \n ${keysToDisplay.join(', ')}`;
+                if (!window.confirm(confirmMessage)) {
+                    return;
+                }
             }
+            await setTime(300, () => navigate('/books'));
+        } catch (e) {
+            setErrorMessage('Failed to back. Please try again.')
+        } finally {
+            setIsDisabled(false);
         }
-        await setTime(2000, () => navigate('/books'));
     }
 
     const handleUpdate = async (e: React.FormEvent) => {
@@ -230,7 +251,6 @@ const EditBook = () => {
             if (keys.length === 0) { return setWarningMessage("WARNING: Not Edited"); }
 
             let confirmMessage = `Are you sure update? \n Update fields: \n ${keysToDisplay.join(', ')}`;
-            // if (isChangedCover) { confirmMessage += 'Book Cover'; }
             if (!window.confirm(confirmMessage)) { return; }
 
             if (!id) { throw new Error('not found id'); }
@@ -618,17 +638,36 @@ const EditBook = () => {
             <div className="w-full bg-white shadow-md rounded-lg p-2 sm:p-6">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold">Edit</h1>
-                    <button
-                        className="w-16 cursor-pointer bg-gray-300 text-gray-800 ml-2 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors text-sm font-medium"
-                        onClick={handleBack}
-                        disabled={isDisabled}
-                    >
-                        {isDisabled ? (
-                            <FaSpinner className="animate-spin inline-block" />
-                        ) : (
-                            'Back'
-                        )}
-                    </button>
+                    <div className="flex justify-end">
+                        <button
+                            className="w-16 cursor-pointer bg-gray-300 text-gray-800 ml-2 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors text-sm font-medium"
+                            onClick={handleBack}
+                            disabled={isDisabled}
+                        >
+                            {isDisabled ? (
+                                <FaSpinner className="animate-spin inline-block" />
+                            ) : (
+                                'Back'
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            className={`w-16 text-white bg-gradient-to-r from-cyan-500 to-blue-500 
+                             focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 
+                            font-medium rounded-lg text-sm px-2 py-2.5 min-w-[80px] ml-2
+                            ${isDisabled ? '' : 'hover:bg-gradient-to-bl'}
+                        `}
+                            disabled={isDisabled}
+                            onClick={handleUpdate}
+                        >
+                            {isDisabled ? (
+                                <FaSpinner className="animate-spin inline-block" />
+                            ) : (
+                                'Update'
+                            )}
+                        </button>
+                    </div>
+
                 </div>
                 <form onSubmit={handleUpdate} className="space-y-4 w-full h-full">
                     <div>
@@ -1139,21 +1178,34 @@ const EditBook = () => {
                             disabled={isDisabled}
                         />
                     </div>
-                    <button
-                        type="submit"
-                        className={`w-16 text-white bg-gradient-to-r from-cyan-500 to-blue-500 
+                    <div className="flex justify-between">
+                        <button
+                            type="submit"
+                            className={`w-16 text-white bg-gradient-to-r from-cyan-500 to-blue-500 
                              focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 
-                            font-medium rounded-lg text-sm px-3 py-2.5 text-center me-2 mb-2 min-w-[90px]
+                            font-medium rounded-lg text-sm px-3 py-2.5 text-center min-w-[80px]
                             ${isDisabled ? '' : 'hover:bg-gradient-to-bl'}
                         `}
-                        disabled={isDisabled}
-                    >
-                        {isDisabled ? (
-                            <FaSpinner className="animate-spin inline-block" />
-                        ) : (
-                            'Update'
-                        )}
-                    </button>
+                            disabled={isDisabled}
+                        >
+                            {isDisabled ? (
+                                <FaSpinner className="animate-spin inline-block" />
+                            ) : (
+                                'Update'
+                            )}
+                        </button>
+                        <button
+                            className="w-16 cursor-pointer bg-gray-300 text-gray-800 ml-2 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors text-sm font-medium"
+                            onClick={handleBack}
+                            disabled={isDisabled}
+                        >
+                            {isDisabled ? (
+                                <FaSpinner className="animate-spin inline-block" />
+                            ) : (
+                                'Back'
+                            )}
+                        </button>
+                    </div>
                     {/* <button
                         type="button"
                         className={`w-16 text-white bg-lime-500 h-10 select-none

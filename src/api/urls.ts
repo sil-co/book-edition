@@ -9,6 +9,7 @@ export const API_ENDPOINTS = {
     postLogin: () => `${BASE_URL}/user/login`,
     getBooks: () => `${BASE_URL}/books`,
     getBooksInit: () => `${BASE_URL}/books/init`,
+    getBookAll: (id: string) => `${BASE_URL}/book/all/${id}`,
     getBook: (id: string) => `${BASE_URL}/book/${id}`,
     getMdBody: (id: string) => `${BASE_URL}/book/mdbody/${id}`,
     getHtmlBody: (id: string) => `${BASE_URL}/book/htmlbody/${id}`,

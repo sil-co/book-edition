@@ -39,7 +39,20 @@ const CreateBook = () => {
     const [warningMessage, setWarningMessage] = useState<string | null>(null);
     const [buttonDisabled, setButtonDisabled] = useState(false);
 
-    // 一定時間後にメッセージを消すためのuseEffect
+    useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = 'Are you sure reload?'; // これで警告を表示
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        // Cleanup function: コンポーネントがアンマウントされたときにイベントリスナーを削除
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, []);
+
     useEffect(() => {
         if (successMessage || errorMessage || warningMessage) {
             const timer = setTimeout(() => {
@@ -63,13 +76,13 @@ const CreateBook = () => {
 
     const extractCreateData = (): Partial<BT.BookDataType> => {
         const extractedData: Partial<BT.BookDataType> = {};
-    
+
         Object.entries(newBook).forEach(([key, value]) => {
             if (value !== undefined && value !== null && value !== '' && !Number.isNaN(value)) {
                 extractedData[key as keyof BT.BookDataType] = value;
             }
         });
-    
+
         return extractedData;
     };
 
@@ -90,8 +103,8 @@ const CreateBook = () => {
             if (!window.confirm(confirmMessage)) { return; }
 
             const res: AxiosResponse<BT.BookDataType> = await axios.post<BT.BookDataType>(
-                API_ENDPOINTS.postCreate(), 
-                extractedData, 
+                API_ENDPOINTS.postCreate(),
+                extractedData,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             setSuccessMessage('Book created successfully!');

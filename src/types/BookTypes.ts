@@ -25,6 +25,10 @@ export interface BookDataType {
     publishedAt?: string;
 }
 
+export interface BookDataRequiredId extends BookDataType {
+    id: string;
+}
+
 export interface CoverImageData {
     id: string;
     userId: string;

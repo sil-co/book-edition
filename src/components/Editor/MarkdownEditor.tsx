@@ -52,7 +52,10 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     // const [markdownContent, setMarkdownContent] = useState<string>("");
     const [previewContent, setPreviewContent] = useState(bookData[contentType] || '');
     const [cssEditorVisible, setCssEditorVisible] = useState(false);
+    const [isScrollSync, setScrollSync] = useState<boolean>(false);
     const [cssContent, setCssContent] = useState("");
+    const [isUpdateMarkdown, setIsUpdateMarkdown] = useState<boolean>(false);
+    const [isSyncing, setIsSyncing] = useState(false);
     const editorRef = useRef(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -66,22 +69,15 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         [handleChangeCss]
     );
 
-    const debouncedSetPreviewContent = useCallback(
-        debounce(() => {
-            if (textareaRef.current) {
-                const newContent = textareaRef.current.value;
-                setPreviewContent(newContent);
-            }
-        }, 4000),
-        []
-    );
-
     const debouncedHandleContentsChange = useCallback(
         debounce(() => {
             if (textareaRef.current) {
+                setIsUpdateMarkdown(true);
                 const newContent = textareaRef.current.value;
+                setPreviewContent(newContent);
                 const formattedContent = formatMarkdownText(newContent);
                 handleContentsChange(contentType, formattedContent);
+                setIsUpdateMarkdown(false);
             }
         }, 2000),
         [handleContentsChange]
@@ -110,11 +106,8 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }, [setContainer, cssEditorVisible]);
 
     useEffect(() => {
-        setPreviewContent(bookData[contentType] || '');
-        if (textareaRef.current) {
-            textareaRef.current.value = bookData[contentType] || '';
-        }
-    }, [bookData[contentType]]);
+        setBookDataContent(bookData[contentType] || '');
+    }, []);
 
     useEffect(() => {
         setCssContent(bookData.defaultStyle || '');
@@ -132,13 +125,20 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         ol: ({ node, ...props }) => <ol {...props} />,
         li: ({ node, ...props }) => <li {...props} />,
         blockquote: ({ node, ...props }) => <blockquote {...props} />,
-        pre: ({ node, ...props }) => <pre {...props} />,
+        pre: ({ node, ...props }) => <div className="code-wrapper"><pre {...props}>{props.children}</pre></div>,
         code: ({ node, ...props }) => <code {...props} />,
         table: ({ node, ...props }) => <table {...props} />,
         thead: ({ node, ...props }) => <thead {...props} />,
         tr: ({ node, ...props }) => <tr {...props} />,
         th: ({ node, ...props }) => <th {...props} />,
         td: ({ node, ...props }) => <td {...props} />,
+    }
+
+    const setBookDataContent = (newContent: string) => {
+        setPreviewContent(newContent);
+        if (textareaRef.current) {
+            textareaRef.current.value = newContent;
+        }
     }
 
     const getCss = async () => {
@@ -160,21 +160,16 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
     const handleInputChange = useCallback(() => {
         if (textareaRef.current) {
-            // const newContent = textareaRef.current.value;
-            // setEditorContent(newContent);
             debouncedHandleContentsChange();
-            debouncedSetPreviewContent();
         }
-    }, [handleContentsChange, debouncedSetPreviewContent]);
+    }, [handleContentsChange]);
 
     const runGpt = async () => {
         if (!gptButton) return setErrorMessage("Can't Run GPT");
         const confirmMessage = `Do you run GPT?`;
         if (!window.confirm(confirmMessage)) { return; }
-
         try {
             setLoadingTxt(`GPT Running...`);
-
             switch (contentType) {
                 case 'toc': {
                     const reqBodyGpt: OT.ReqBodyGpt = {
@@ -183,10 +178,16 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         model: 'gpt-4o',
                         contentType: contentType,
                     }
-                    const res: AxiosResponse<string> = await axios.post<string>(API_ENDPOINTS.runGptOfToc(), reqBodyGpt);
+                    const token = localStorage.getItem('token');
+                    const res: AxiosResponse<string> = await axios.post<string>(
+                        API_ENDPOINTS.runGptOfToc(),
+                        reqBodyGpt,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
                     const gptResult: string = res.data;
                     const newContent: string = bookData[contentType] || '' + gptResult;
                     handleContentsChange(contentType, newContent);
+                    setBookDataContent(newContent);
                     setSuccessMessage('GPT Output Successfully!');
                     break;
                 }
@@ -202,7 +203,9 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                             count: 1,
                         }
                         let gptResult = bookData[contentType] || '';
-                        const ws = new WebSocket(WS_ENDPOINTS.wsGptOfMdBody());
+                        const token = localStorage.getItem('token');
+                        if (!token) { return reject('No token.') }
+                        const ws = new WebSocket(`${WS_ENDPOINTS.wsGptOfMdBody()}`, ['token', token]);
                         setCurrentWS(ws);
 
                         // WebSocket接続が開いたときの処理
@@ -216,6 +219,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                             const data: OT.WSResGptType = JSON.parse(event.data);
                             gptResult += data.gptResult ? data.gptResult : '';
                             handleContentsChange(contentType, gptResult);
+                            setBookDataContent(gptResult);
                             setLoadingTxt(`GPT Running... ${data.gptProgress ? data.gptProgress : ''}`);
                             if (data.status === 'finished') {
                                 setSuccessMessage('GPT Output Successfully!');
@@ -234,6 +238,10 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                             reject('WebSocket connection failed');
                         };
                     }).then(() => {
+                        setIsStoppedGpt(false);
+                    }).catch(e => {
+                        console.error(e);
+                    }).finally(() => {
                         setIsStoppedGpt(false);
                     });
                     return '';
@@ -257,10 +265,16 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         model: 'gpt-4o',
                         contentType: contentType,
                     }
-                    const res: AxiosResponse<string> = await axios.post<string>(API_ENDPOINTS.runGptOfIntroduction(), reqBodyGpt);
+                    const token = localStorage.getItem('token');
+                    const res: AxiosResponse<string> = await axios.post<string>(
+                        API_ENDPOINTS.runGptOfIntroduction(),
+                        reqBodyGpt,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
                     const gptResult: string = res.data;
                     const newContent: string = bookData[contentType] || '' + gptResult;
                     handleContentsChange(contentType, newContent);
+                    setBookDataContent(newContent);
                     setSuccessMessage('GPT Output Successfully!');
                     break;
                 }
@@ -271,10 +285,16 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         model: 'gpt-4o',
                         contentType: contentType,
                     }
-                    const res: AxiosResponse<string> = await axios.post<string>(API_ENDPOINTS.runGptOfAfterend(), reqBodyGpt);
+                    const token = localStorage.getItem('token');
+                    const res: AxiosResponse<string> = await axios.post<string>(
+                        API_ENDPOINTS.runGptOfAfterend(),
+                        reqBodyGpt,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
                     const gptResult: string = res.data;
                     const newContent: string = bookData[contentType] || '' + gptResult;
                     handleContentsChange(contentType, newContent);
+                    setBookDataContent(newContent);
                     setSuccessMessage('GPT Output Successfully!');
                     break;
                 }
@@ -374,9 +394,13 @@ ${htmlContent}
         }
     };
 
-    const handleToggleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleCssEditorToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
         setCssEditorVisible(e.target.checked);
     };
+
+    const handleScrollSyncToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setScrollSync(e.target.checked);
+    }
 
     const resetCss = async () => {
         try {
@@ -470,6 +494,7 @@ ${htmlContent}
 
     const handleDrop = async (e: DragEvent<HTMLTextAreaElement>) => {
         e.preventDefault();
+        setIsUpdateMarkdown(true);
         const file = e.dataTransfer.files[0];
 
         // 画像ファイルかチェック
@@ -502,12 +527,35 @@ ${htmlContent}
             } catch (error) {
                 console.error("Image upload failed", error);
                 setErrorMessage("Image upload failed");
+            } finally {
+                setIsUpdateMarkdown(false);
             }
         }
     };
 
     const handleDragOver = (e: DragEvent<HTMLTextAreaElement>) => {
         e.preventDefault();  // ドロップを許可
+    };
+
+    const syncScroll = (source: HTMLElement, target: HTMLElement) => {
+        // sourceのスクロール比率 (0 から 1)
+        const sourceScrollRatio = source.scrollTop / (source.scrollHeight - source.clientHeight);
+
+        // targetのスクロール位置を、sourceのスクロール比率に基づいて計算
+        const targetScrollTop = (target.scrollHeight - target.clientHeight) * sourceScrollRatio;
+
+        // targetのスクロール位置を設定
+        target.scrollTop = targetScrollTop;
+    };
+
+    const handleTextareaScroll = () => {
+        if (isScrollSync && !isSyncing && contentRef.current && textareaRef.current) {
+            setIsSyncing(true);
+            syncScroll(textareaRef.current, contentRef.current);
+            setTimeout(() => {
+                setIsSyncing(false);
+            }, 0);
+        }
     };
 
     return (
@@ -587,11 +635,22 @@ ${htmlContent}
                             type="checkbox"
                             value=""
                             className="sr-only peer"
-                            onChange={handleToggleChange}
+                            onChange={handleCssEditorToggle}
                             checked={cssEditorVisible}
                         />
                         <div className="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                         <span className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">CSS Editor</span>
+                    </label>
+                    <label className="inline-flex items-center cursor-pointer pl-5">
+                        <input
+                            type="checkbox"
+                            value=""
+                            className="sr-only peer"
+                            onChange={handleScrollSyncToggle}
+                            checked={isScrollSync}
+                        />
+                        <div className="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        <span className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">Scroll Sync</span>
                     </label>
                 </div>
                 <div className="flex flex-col pl-4 pr-4 pb-4 pt-1 h-full md:flex-row">
@@ -605,8 +664,9 @@ ${htmlContent}
                             onDrop={handleDrop}
                             onDragOver={handleDragOver}
                             className="w-full h-[91%] p-2 border border-gray-300 rounded"
+                            disabled={isUpdateMarkdown}
+                            onScroll={handleTextareaScroll}
                         ></textarea>
-
                         {cssEditorVisible && (
                             <div
                                 className="absolute top-0 -left-1 z-30 w-[calc(100%-0.25rem)] h-[91%] overflow-auto pr-0 border border-gray-300 rounded"
@@ -615,10 +675,10 @@ ${htmlContent}
                         )}
                     </div>
 
-                    <div className="w-full md:w-1/2 pl-2 h-[91%] overflow-auto p-2 border border-gray-300 rounded max-w-none">
-                        <div ref={contentRef}>
+                    <div className="w-full md:w-1/2 pl-2 h-[91%] overflow-auto p-2 border border-gray-300 rounded max-w-none" ref={contentRef}>
+                        <div className="overflow-auto">
                             <style>${cssContent}</style>
-                            <div id="all-wrapper" ref={contentInnerRef}>
+                            <div id="all-wrapper" ref={contentInnerRef} className="overflow-auto">
                                 <ReactMarkdown
                                     className="prose w-full"
                                     rehypePlugins={[rehypeHighlight]}

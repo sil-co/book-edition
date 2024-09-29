@@ -13,30 +13,33 @@ import * as BT from '../../types/BookTypes';
 
 const MyBooks = () => {
     const navigate = useNavigate();
-    const { setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
+    const { setSuccessMessage, setLoadingTxt, setErrorMessage } = useGlobalState();
 
-    const [books, setBooks] = useState<BT.BookDataType[]>([]);
-    const [isSelectModalOpen, setIsSelectModalOpen] = useState<boolean>(false);
+    const [books, setBooks] = useState<BT.BookDataRequiredId[]>([]);
+    const [bookData, setBookData] = useState<BT.BookDataRequiredId | null>(null);
     const [selectedBookId, setSelectedBookId] = useState<string>('');
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            navigate("/login?error=unauthorized&source=mybook");
-            return;
+        try {
+            setLoadingTxt('Fetching data...');
+            const token = localStorage.getItem('token');
+            if (!token) {
+                navigate("/login?error=unauthorized&source=mybook");
+                return;
+            }
+            axios.get<BT.BookDataRequiredId[]>(API_ENDPOINTS.getBooksInit(), {
+                headers: { Authorization: `Bearer ${token}` },
+            }).then((res) => {
+                const data = res.data;
+                console.log({ data });
+                setBooks(data);
+            });
+        } catch (e) {
+            setErrorMessage('Failed to fetch data');
+        } finally {
+            setLoadingTxt('');
         }
-        axios.get<BT.BookDataType[]>(API_ENDPOINTS.getBooksInit(), {
-            headers: { Authorization: `Bearer ${token}` },
-        }).then((res) => {
-            const data = res.data;
-            console.log({ data })
-            setBooks(data);
-        });
     }, []);
-
-    useEffect(() => {
-        if (selectedBookId) { setIsSelectModalOpen(true); }
-    }, [selectedBookId])
 
     const handleOpenInNewTab = (url: string) => {
         if (!url) return;
@@ -58,17 +61,18 @@ const MyBooks = () => {
         }
     }
 
-    const toggleSelectModal = () => {
-        if (!isSelectModalOpen) {
-            setIsSelectModalOpen(true);
-        } else {
-            setIsSelectModalOpen(false);
+    const toggleSelectModal = async (bookId: string) => {
+        if (selectedBookId === bookId) {
+            setBookData(null);
             setSelectedBookId('');
+        } else {
+            const token = localStorage.getItem('token');
+            const res = await axios.get<BT.BookDataRequiredId>(API_ENDPOINTS.getBookAll(bookId), {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setBookData(res.data);
+            setSelectedBookId(bookId);
         }
-    }
-
-    const handleBookId = (bookId: string) => {
-        setSelectedBookId(bookId);
     }
 
     return (
@@ -104,12 +108,12 @@ const MyBooks = () => {
                                 )}
                                 <button
                                     type="button"
-                                    className={`text-white bg-lime-500  select-none
+                                    className={`text-white bg-lime-500  select-none ml-2
                                         font-medium rounded-lg text-sm px-3 py-2 text-center
                                         ${book.isGptRunning ? 'bg-gray-400 cursor-not-allowed' : 'bg-lime-500 hover:bg-lime-600'}
                                     `}
                                     disabled={book.isGptRunning}
-                                    onClick={() => handleBookId(book.id || '')}
+                                    onClick={() => toggleSelectModal(book.id)}
                                 >
                                     {book.isGptRunning ? (
                                         <FaSpinner className="animate-spin inline-block " />
@@ -141,11 +145,13 @@ const MyBooks = () => {
                                         <span></span>
                                     </div>
                                 )}
-                                <SelectModal
-                                    selectedBookId={selectedBookId}
-                                    isOpen={isSelectModalOpen}
-                                    onClose={toggleSelectModal}
-                                />
+                                {selectedBookId === book.id && bookData && (
+                                    <SelectModal
+                                        isOpen={selectedBookId === book.id}
+                                        onClose={() => toggleSelectModal(book.id)}
+                                        bookData={bookData}
+                                    />
+                                )}
                             </li>
                         ))}
                     </ul>
