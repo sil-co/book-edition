@@ -5,7 +5,7 @@ import { useGlobalState } from '../../context/GlobalStateProvider';
 import * as BT from '../../types/BookTypes';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../../api/urls';
-import MarkdownEditor from '../Editor/MarkdownEditor';
+// import MarkdownEditor from '../Editor/MarkdownEditor';
 
 const contentOptions: BT.ContentOption[] = [
     { id: 'title_sm', label: 'Title', columnName: 'title', selected: true },
