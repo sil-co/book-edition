@@ -415,35 +415,23 @@ ${htmlContent}
         }
     }
 
-    const extractHeadersAndCode = (markdownText: string): string => {
-        const confirmMessage = `Extract headers and code from body?`;
-        if (!window.confirm(confirmMessage)) { return ''; }
-
-        const headerRegex = /^(#{1,6} .+)/gm; // ヘッダーを検出する正規表現
-        const codeBlockRegex = /```(\w+)?/; // コードブロックを検出する正規表現
-
-        let newMarkdown = '';
-
-        const lines = markdownText.split('\n');
-        let isCodeBlock = false;
-
-        // 各行を順番に確認し、ヘッダーまたはコードブロックを追加
-        for (const line of lines) {
-            if (isCodeBlock) {
-                newMarkdown += `${line}\n`;
-            }
-            // ヘッダーが存在する場合は追加
-            else if (line.match(headerRegex)) {
-                newMarkdown += `${line}\n`;
-            }
-            // コードブロックが存在する場合は追加
-            else if (line.match(codeBlockRegex)) {
-                console.log(line)
-                newMarkdown += `${line}\n`;
-                isCodeBlock = !isCodeBlock;
-            }
+    const extractHeadersAndCode = async () => {
+        try {
+            const confirmMessage = `Extract headers and code from body?`;
+            if (!window.confirm(confirmMessage)) { return ''; }
+            const token = localStorage.getItem('token');
+            const res: AxiosResponse<string> = await axios.post<string>(
+                API_ENDPOINTS.postExtract(),
+                { id: bookData.id },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const newContent: string = bookData[contentType] || '' + res.data;
+            handleContentsChange(contentType, newContent);
+            setBookDataContent(newContent);
+            setSuccessMessage('Successfully! Ectract Usage');
+        } catch (e) {
+            setErrorMessage('Failed Extract Usage');
         }
-        return newMarkdown;
     };
 
     const uploadImage = async (file: File): Promise<string | undefined> => {
@@ -566,14 +554,6 @@ ${htmlContent}
                         <h2 className="text-xl font-bold mr-2">{editorTitle}</h2>
                     </div>
                     <div className="space-x-2">
-                        {extract && (
-                            <button
-                                onClick={() => extractHeadersAndCode(bookData.mdBody || '')}
-                                className="bg-blue-500 text-white px-2 py-1 rounded w-18"
-                            >
-                                Extract
-                            </button>
-                        )}
                         {/* Todo: まずはhtmlでいい。その後epubが必要なら作る。 */}
                         {/* {loadable && (
                             <button
@@ -589,6 +569,14 @@ ${htmlContent}
                                 className="bg-blue-500 text-white px-3 py-1 rounded w-16"
                             >
                                 Reset
+                            </button>
+                        )}
+                        {extract && (
+                            <button
+                                onClick={extractHeadersAndCode}
+                                className="bg-blue-500 text-white px-2 py-1 rounded w-18"
+                            >
+                                Extract
                             </button>
                         )}
                         <button
