@@ -1,0 +1,20 @@
+{
+  "welcome": "Welcome to our application",
+  "description": "This is a multi-language supported application",
+  "home": "Home",
+  "register": "Register",
+  "login": "Login",
+  "language": "Language",
+  "author": "Author",
+  "genre": "Genre",
+  "more": "Learn more",
+  "name": "Name",
+  "email": "Email",
+  "password": "Password",
+  "loading": "Loading",
+  "registerSuccess": "Registration successful!",
+  "registerFailed": "Registration failed.",
+  "fetchData": "Fetching data...",
+  "fetchFailed": "Failed to fetch data",
+  "deleteConfirm": "Are you sure delete \"{{title}}\"?"
+}

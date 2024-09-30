@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 
 import { API_ENDPOINTS } from '../../api/urls';
 
@@ -11,6 +12,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -35,7 +37,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     }, [navigate]);
 
     if (!isAuthenticated) {
-        return <p>Loading...</p>; // 認証確認中にローディング画面を表示
+        return <p>{t('loading')}...</p>; // 認証確認中にローディング画面を表示
     }
 
     return <>{children}</>;

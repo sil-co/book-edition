@@ -1,17 +1,15 @@
 import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
+import { I18nextProvider, useTranslation } from 'react-i18next';
+import './i18n'; // i18nの設定をインポート
+
+import { useEffect, Suspense, lazy } from 'react';
 
 import { GlobalStateProvider } from './context/GlobalStateProvider';
 import { useGlobalState } from './context/GlobalStateProvider';
-import { useEffect } from 'react';
 // コンポーネントを遅延読み込み
-import { Suspense, lazy } from 'react';
 const MyBooks = lazy(() => import('./components/BookList/MyBooks'));
 const CreateBook = lazy(() => import('./components/CreateBook/CreateBook'));
 const EditBook = lazy(() => import('./components/EditBook/EditBook'));
-
-// import MyBooks from './components/BookList/MyBooks';
-// import CreateBook from './components/CreateBook/CreateBook';
-// import EditBook from './components/EditBook/EditBook';
 import BookList from './components/BookList/BookList';
 import Login from "./components/Auth/Login";
 import Register from "./components/Auth/Register";
@@ -21,6 +19,7 @@ import SuccessModal from './components/Modal/SuccessModal';
 import ImageModal from './components/Modal/ImageModal';
 import WarningModal from './components/Modal/WarningModal';
 import Loading from './components/Modal/Loading';
+import Navbar from "./components/Navigator/Navbar";
 
 const AppContent = () => {
     const {
@@ -72,10 +71,17 @@ const AppContent = () => {
 };
 
 const App = () => {
+    const { t, i18n } = useTranslation();
+
+    const changeLanguage = (lng: string) => {
+        i18n.changeLanguage(lng); // 言語を切り替える
+    };
+
     return (
         <GlobalStateProvider>
-            <Router>
-                <nav className="bg-gray-900 p-4 text-white shadow-lg fixed w-full top-0 z-20">
+            <I18nextProvider i18n={i18n}>
+                <Router>
+                    {/* <nav className="bg-gray-900 p-4 text-white shadow-lg fixed w-full top-0 z-20">
                     <div className="container mx-auto flex justify-between items-center">
                         <div className="text-lg font-bold">
                             <Link to="/">Auto Writing</Link>
@@ -104,11 +110,13 @@ const App = () => {
                             </li>
                         </ul>
                     </div>
-                </nav>
-                <div className="">
-                    <AppContent />
-                </div>
-            </Router>
+                </nav> */}
+                    <Navbar changeLanguage={changeLanguage} />
+                    <div className="">
+                        <AppContent />
+                    </div>
+                </Router>
+            </I18nextProvider>
         </GlobalStateProvider>
     );
 }

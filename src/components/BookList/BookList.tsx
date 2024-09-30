@@ -1,5 +1,5 @@
-import axios, { AxiosResponse } from 'axios';
-import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 
 import { useState, useEffect } from 'react';
 
@@ -7,21 +7,13 @@ import { API_ENDPOINTS } from '../../api/urls';
 import * as BT from '../../types/BookTypes';
 
 const BookList = () => {
-    const navigate = useNavigate();
-    const token = localStorage.getItem('token');
-    if (!token) {
-        navigate("/login?error=unauthorized");
-        return;
-    }
-
     const [books, setBooks] = useState<BT.BookDataType[]>([]);
+    const { t } = useTranslation();
 
     useEffect(() => {
-        axios.get<BT.BookDataType[]>(API_ENDPOINTS.getBooks(), {
-            headers: { Authorization: `Bearer ${token}` },
-        }).then((res) => {
-            setBooks(res.data);
-        });
+        axios.get<BT.BookDataType[]>(API_ENDPOINTS.getBooks())
+            .then((res) => { setBooks(res.data); })
+            .catch((e) => console.error('Failed fetch data'));
     }, []);
 
 
@@ -39,8 +31,8 @@ const BookList = () => {
                     />
                     <div className="flex-grow">
                         <h2 className="text-lg font-bold mb-2">{book.title}</h2>
-                        <p className="text-gray-500 mb-1">著者: {book.author}</p>
-                        <p className="text-gray-500 mb-1">ジャンル: {book.genre}</p>
+                        <p className="text-gray-500 mb-1">{t('author')}: {book.author}</p>
+                        <p className="text-gray-500 mb-1">{t('genre')}: {book.genre}</p>
                         <p className="text-gray-700 mb-4">{book.summary}</p>
                     </div>
                     <div className="flex justify-between items-center">
@@ -51,7 +43,7 @@ const BookList = () => {
                             rel="noopener noreferrer"
                             className="text-blue-500 hover:underline"
                         >
-                            詳細を見る
+                            {t('more')}
                         </a>
                     </div>
                 </div>

@@ -304,6 +304,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             }
         } catch (e) {
             setErrorMessage('Failed GPT Output. Please try again.');
+            console.error(e)
         } finally {
             setLoadingTxt('');
         }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { API_ENDPOINTS } from '../../api/urls';
 import { useGlobalState } from '../../context/GlobalStateProvider';
@@ -10,6 +11,7 @@ const Login: React.FC = () => {
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
     const { setSuccessMessage, setErrorMessage } = useGlobalState();
+    const { t } = useTranslation();
 
     useEffect(() => {
         const searchParams = new URLSearchParams(location.search);
@@ -50,10 +52,10 @@ const Login: React.FC = () => {
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <div className="w-full max-w-md bg-white p-8 shadow-md">
-                <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
+                <h2 className="text-2xl font-bold mb-4 text-center">{t('login')}</h2>
                 <form onSubmit={handleLogin}>
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700">Email</label>
+                        <label className="block text-sm font-medium text-gray-700">{t('email')}</label>
                         <input
                             type="email"
                             value={email}
@@ -62,7 +64,7 @@ const Login: React.FC = () => {
                         />
                     </div>
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700">Password</label>
+                        <label className="block text-sm font-medium text-gray-700">{t('password')}</label>
                         <input
                             type="password"
                             value={password}
@@ -71,7 +73,7 @@ const Login: React.FC = () => {
                         />
                     </div>
                     <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg">
-                        Login
+                        {t('login')}
                     </button>
                 </form>
             </div>

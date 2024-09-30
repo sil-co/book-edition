@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Link } from "react-router-dom";
 import { FiExternalLink } from 'react-icons/fi';
 import { FaSpinner } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 
 import { useState, useEffect } from 'react';
 
@@ -14,14 +15,14 @@ import * as BT from '../../types/BookTypes';
 const MyBooks = () => {
     const navigate = useNavigate();
     const { setSuccessMessage, setLoadingTxt, setErrorMessage } = useGlobalState();
-
     const [books, setBooks] = useState<BT.BookDataRequiredId[]>([]);
     const [bookData, setBookData] = useState<BT.BookDataRequiredId | null>(null);
     const [selectedBookId, setSelectedBookId] = useState<string>('');
+    const { t } = useTranslation();
 
     useEffect(() => {
         try {
-            setLoadingTxt('Fetching data...');
+            setLoadingTxt(t('fetchData'));
             const token = localStorage.getItem('token');
             if (!token) {
                 navigate("/login?error=unauthorized&source=mybook");
@@ -35,7 +36,7 @@ const MyBooks = () => {
                 setBooks(data);
             });
         } catch (e) {
-            setErrorMessage('Failed to fetch data');
+            setErrorMessage(t('fetchFailed'));
         } finally {
             setLoadingTxt('');
         }
@@ -48,7 +49,7 @@ const MyBooks = () => {
 
     const handleDelete = async (book: BT.BookDataType) => {
         try {
-            const confirmMessage = `Are you sure delete 「${book.title}」 ?`;
+            const confirmMessage = t('deleteConfirm', { title: book.title });
             if (!window.confirm(confirmMessage)) { return; }
             if (!book.id) { return; }
 
