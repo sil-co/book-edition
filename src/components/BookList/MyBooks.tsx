@@ -54,10 +54,10 @@ const MyBooks = () => {
             if (!book.id) { return; }
 
             const res: AxiosResponse<BT.BookDataType> = await axios.delete<BT.BookDataType>(API_ENDPOINTS.deleteBook(book.id));
-            setSuccessMessage(`「${res.data.title}」 is deleted. `);
+            setSuccessMessage(t('deleteSuccess', { title: res.data.title }));
             setBooks((prev) => prev.filter(prevBook => prevBook.id !== book.id));
         } catch (e) {
-            setErrorMessage("Failed to delete");
+            setErrorMessage(t('deleteFailed'));
         } finally {
         }
     }
@@ -82,7 +82,7 @@ const MyBooks = () => {
                 <div className="bg-white shadow-md rounded-lg p-2 sm:p-6 max-w-5xl w-full flex flex-col items-end">
                     <div className="w-full flex justify-between">
                         <h1 className="text-2xl font-bold mb-4">Book List</h1>
-                        <Link to="/create" className="text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">New</Link>
+                        <Link to="/create" className="text-white bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2">{t('new')}</Link>
                     </div>
                     <ul className="w-full space-y-4 mb-6">
                         {books.map((book) => (
@@ -92,10 +92,10 @@ const MyBooks = () => {
                             >
                                 <div className="flex-grow mr-4">
                                     <h3 className="font-semibold text-lg text-gray-800 truncate">{book.title}</h3>
-                                    <p className="text-sm text-gray-600">by {book.author}
+                                    <p className="text-sm text-gray-600">{t('byAuthor', { author: book.author })}
 
                                         {book.isPublished && (
-                                            <span className="inline-block text-sm px-2 text-green-600 font-semibold mt-2">Published</span>
+                                            <span className="inline-block text-sm px-2 text-green-600 font-semibold mt-2">{t('published')}</span>
                                         )}
                                     </p>
                                 </div>
@@ -129,7 +129,7 @@ const MyBooks = () => {
                                         ${book.isGptRunning ? "bg-gray-400 cursor-not-allowed" : "bg-orange-500 hover:bg-orange-600"}`
                                     }
                                 >
-                                    Edit
+                                    {t('edit')}
                                 </Link>
                                 <button
                                     onClick={() => handleDelete(book)}
@@ -138,11 +138,11 @@ const MyBooks = () => {
                                     }
                                     disabled={book.isGptRunning}
                                 >
-                                    Delete
+                                    {t('delete')}
                                 </button>
                                 {book.isGptRunning && (
                                     <div className="absolute inset-0 bg-emerald-700	bg-opacity-60 text-white flex p-1 sm:p-2 items-center justify-center rounded-lg">
-                                        <span className="text-2xl font-semibold">Cannot edit because GPT is running... {book.gptProgress}</span>
+                                        <span className="text-2xl font-semibold">{t('gptCanotEdit', { gptProgress: book.gptProgress })}</span>
                                         <span></span>
                                     </div>
                                 )}

@@ -5,15 +5,17 @@ import { useState, useEffect } from 'react';
 
 import { API_ENDPOINTS } from '../../api/urls';
 import * as BT from '../../types/BookTypes';
+import { useGlobalState } from '../../context/GlobalStateProvider';
 
 const BookList = () => {
     const [books, setBooks] = useState<BT.BookDataType[]>([]);
+    const { setSuccessMessage, setErrorMessage } = useGlobalState();
     const { t } = useTranslation();
 
     useEffect(() => {
         axios.get<BT.BookDataType[]>(API_ENDPOINTS.getBooks())
             .then((res) => { setBooks(res.data); })
-            .catch((e) => console.error('Failed fetch data'));
+            .catch((e) => setErrorMessage(t('fetchFailed')));
     }, []);
 
 

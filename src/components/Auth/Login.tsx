@@ -40,12 +40,12 @@ const Login: React.FC = () => {
         e.preventDefault();
         try {
             const res = await axios.post(API_ENDPOINTS.postLogin(), { email, password });
-            setSuccessMessage('Login successful');
+            setSuccessMessage(t('loginSuccess'));
             const { token } = res.data;
             localStorage.setItem('token', token);
             navigate('/books');
         } catch (err) {
-            setErrorMessage('Invalid email or password');
+            setErrorMessage(t('loginInvalid'));
         }
     };
 

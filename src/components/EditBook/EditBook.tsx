@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { FaSpinner } from 'react-icons/fa';
 import { FiExternalLink } from 'react-icons/fi';
 import { FaAngleDoubleLeft } from "react-icons/fa";
+import { useTranslation } from 'react-i18next';
 
 import { useState, useEffect, useRef } from 'react';
 
@@ -47,6 +48,7 @@ const EditBook = () => {
     const [isDisabled, setIsDisabled] = useState<boolean>(false);
     const selectedImageRef = useRef<HTMLImageElement | null>(null);
     const previewImageRef = useRef<HTMLImageElement | null>(null);
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (!id) {
@@ -88,11 +90,11 @@ const EditBook = () => {
 
     const getBookData = async () => {
         try {
-            setLoadingTxt('Loading...');
+            setLoadingTxt(`${t('loading')}...`);
             if (!id) { throw new Error('not found id'); }
             const isGpt: boolean = await checkIsGpt(id);
             if (isGpt) {
-                setWarningMessage('Cannot display because GPT is still running.');
+                setWarningMessage(t('gptCanotDisplay'));
                 await setTime(2000, () => navigate('/books'));
                 return;
             }
@@ -106,16 +108,15 @@ const EditBook = () => {
             setUnEditedData(data);
             if (data.coverImageId) { setSelectedImageId(data.coverImageId); }
         } catch (error) {
-            console.error("Failed to get bookData", error);
-            setErrorMessage(`Failed to get bookData.`);
-            setSuccessMessage(null);
+            console.error(t('fetchFailedBookData'), error);
+            setErrorMessage(t('fetchFailedBookData'));
         } finally {
             setLoadingTxt('');
         }
     };
 
     const setNewSelectedImage = async (selectedImageId: string) => {
-        if (!selectedImageId) { return setErrorMessage("Cannot select") }
+        if (!selectedImageId) { return setErrorMessage(t('canotSelect')) }
         const res: AxiosResponse<BT.CoverImageData> = await axios.get<BT.CoverImageData>(API_ENDPOINTS.getCoverImage(selectedImageId));
         const imagePath = res.data.imagePath || '';
         const newImagePath = `${imagePath}?t=${new Date().getTime()}`;
@@ -123,7 +124,7 @@ const EditBook = () => {
     }
 
     const setNewPreviewImage = async (imagePreviewId: string) => {
-        if (!imagePreviewId) { return setErrorMessage("No preview image.") }
+        if (!imagePreviewId) { return setErrorMessage(t('noPreviewImage')) }
         const res: AxiosResponse<BT.CoverImageData> = await axios.get<BT.CoverImageData>(API_ENDPOINTS.getCoverImage(imagePreviewId));
         const imagePath = res.data.imagePath || '';
         const newImagePath = `${imagePath}?t=${new Date().getTime()}`;
@@ -144,41 +145,41 @@ const EditBook = () => {
             case 'id':
                 return 'ID';
             case 'title':
-                return 'Title';
+                return t('title');
             case 'author':
-                return 'Author';
+                return t('author');
             case 'genre':
-                return 'Genre';
+                return t('genre');
             case 'toc':
-                return 'Table of contents';
+                return t('toc');
             case 'htmlBody':
-                return 'Body(Html)';
+                return t('bodyHtml');
             case 'mdBody':
-                return 'Body(Markdown)';
+                return t('bodyMd');
             case 'htmlUsage':
-                return 'Usage(Html)';
+                return t('usageHtml');
             case 'mdUsage':
-                return 'Usage(Markdown)';
+                return t('usageMd');
             case 'coverImageId':
-                return 'Cover';
+                return t('cover');
             case 'language':
-                return 'Language';
+                return t('language');
             case 'summary':
-                return 'Summary';
+                return t('summary');
             case 'kindle':
-                return 'URL(Kindle)';
+                return t('urlKindle');
             case 'isPublished':
-                return 'Published';
+                return t('published');
             case 'defaultStyle':
-                return 'Style';
+                return t('style');
             case 'introduction':
-                return 'Introduction';
+                return t('introduction');
             case 'afterEnd':
-                return 'AfterEnd';
+                return t('afterend');
             case 'otherBooks':
-                return 'Other Books';
+                return t('otherBooks');
             case 'publishedAt':
-                return 'Published_At';
+                return t('publishedAt');
             default:
                 return '';
         }
@@ -208,14 +209,15 @@ const EditBook = () => {
             const keys = Object.keys(extractedData).filter(key => key !== 'id');
             const keysToDisplay: string[] = keys.map(key => textToDisplay(key));
             if (keys.length > 0) {
-                const confirmMessage = `Back to without saving? \n Update field: \n ${keysToDisplay.join(', ')}`;
+                const joinedKeysToDisplay = keysToDisplay.join(',\n');
+                const confirmMessage = t('backConfirm', { fields: joinedKeysToDisplay });
                 if (!window.confirm(confirmMessage)) {
                     return;
                 }
             }
             await setTime(300, () => navigate('/books'));
         } catch (e) {
-            setErrorMessage('Failed to back. Please try again.')
+            setErrorMessage(t('backFailed'))
         } finally {
             setIsDisabled(false);
         }
@@ -230,32 +232,25 @@ const EditBook = () => {
             // フォームバリデーション
             const field: BT.RequiredFieldType | '' = requiredCheck();
             if (field !== '') {
-                setErrorMessage(`The "${field.charAt(0).toUpperCase() + field.slice(1)}" field is required.`);
+                setErrorMessage(t('requiredFailed', { field: textToDisplay(field) }));
                 return;
             }
 
             // 編集した箇所のみのプロパティを抽出
             const extractedData: Partial<BT.BookDataType> = extractEditedData();
 
-            // 編集していても空の場合は更新しない 
-            // if (!extractedData.htmlBody) { delete extractedData.htmlBody; }
-            // if (!extractedData.mdBody) { delete extractedData.mdBody; }
-            // if (!extractedData.htmlUsage) { delete extractedData.htmlUsage; }
-            // if (!extractedData.mdUsage) { delete extractedData.mdUsage; }
-            // if (!extractedData.publishedAt) { delete extractedData.publishedAt; }
-
             // propertyがidのみの場合
             const keys = Object.keys(extractedData).filter(key => key !== 'id');
             let keysToDisplay: string[] = keys.map(key => textToDisplay(key));
             // const isChangedCover = await isChangedCoverImage();
-            if (keys.length === 0) { return setWarningMessage("WARNING: Not Edited"); }
+            if (keys.length === 0) { return setWarningMessage(t('warningNotEdited')); }
 
-            let confirmMessage = `Are you sure update? \n Update fields: \n ${keysToDisplay.join(', ')}`;
+            let confirmMessage = t('updateConfirm', { fields: keysToDisplay.join('\n') });
             if (!window.confirm(confirmMessage)) { return; }
 
             if (!id) { throw new Error('not found id'); }
             const isGpt: boolean = await checkIsGpt(id);
-            if (isGpt) { return setWarningMessage('Cannot update because GPT is still running.'); }
+            if (isGpt) { return setWarningMessage(t('errorCanotUpdate')); }
 
             const token = localStorage.getItem('token');
             const res: AxiosResponse<BT.BookDataType> = await axios.put<BT.BookDataType>(
@@ -273,9 +268,9 @@ const EditBook = () => {
             const updatedField = Object.keys(res.data).filter(key => key !== 'id');
             keysToDisplay = updatedField.map(key => textToDisplay(key));
 
-            setSuccessMessage(`${keysToDisplay.join(', ')} Updated Successfully! `);
+            setSuccessMessage(t('updateSuccess', { fields: keysToDisplay.join('\n') }));
         } catch (e) {
-            setErrorMessage("Failed to Update");
+            setErrorMessage(t('updateFailed'));
         } finally {
             setIsDisabled(false);
         }
@@ -301,7 +296,7 @@ const EditBook = () => {
         if (!isMdBodyOpen) {
             try {
                 if (!editBookData.mdBody && editBookData.mdBody !== '') {
-                    setLoadingTxt('Loading...');
+                    setLoadingTxt(`${t('loading')}...`);
                     if (!id) { throw new Error('not found id'); }
                     const [_, res]: [void, AxiosResponse<BT.MdBodyType>] = await Promise.all([
                         setTime(200),
@@ -319,8 +314,8 @@ const EditBook = () => {
                 }
                 setIsMdBodyOpen(true);
             } catch (error) {
-                console.error('Failed to fetch Markdown Body content.', error);
-                setErrorMessage(`Failed to fetch Markdown Body content.`);
+                console.error(t('fetchFailedMdBody'), error);
+                setErrorMessage(t('fetchFailedMdBody'));
             } finally {
                 setLoadingTxt('');
             }
@@ -334,7 +329,7 @@ const EditBook = () => {
         if (!isHtmlBodyOpen) {
             try {
                 if (!editBookData.htmlBody && editBookData.htmlBody !== '') {
-                    setLoadingTxt('Loading...');
+                    setLoadingTxt(`${t('loading')}...`);
                     if (!id) { throw new Error('not found id'); }
                     const [_, res]: [void, AxiosResponse<BT.HtmlBodyType>] = await Promise.all([
                         setTime(200),
@@ -352,8 +347,8 @@ const EditBook = () => {
                 }
                 setIsHtmlBodyOpen(true);
             } catch (error) {
-                console.error('Failed to fetch HTML Body content', error);
-                setErrorMessage(`Failed to fetch HTML Body content.`);
+                console.error(t('fetchFailedHtmlBody'), error);
+                setErrorMessage(t('fetchFailedHtmlBody'));
             } finally {
                 setLoadingTxt('');
             }
@@ -367,7 +362,7 @@ const EditBook = () => {
         if (!isMdUsageOpen) {
             try {
                 if (!editBookData.mdUsage && editBookData.mdUsage !== '') {
-                    setLoadingTxt('Loading...');
+                    setLoadingTxt(`${t('loading')}...`);
                     if (!id) { throw new Error('not found id'); }
                     const [_, res]: [void, AxiosResponse<BT.MdUsageType>] = await Promise.all([
                         setTime(200),
@@ -385,8 +380,8 @@ const EditBook = () => {
                 }
                 setIsMdUsageOpen(true);
             } catch (error) {
-                console.error('Failed to fetch Markdown Usage content', error);
-                setErrorMessage(`Failed to fetch Markdown Usage content.`);
+                console.error(t('fetchFailedMdUsage'), error);
+                setErrorMessage(t('fetchFailedMdUsage'));
             } finally {
                 setLoadingTxt('');
             }
@@ -400,7 +395,7 @@ const EditBook = () => {
         if (!isHtmlUsageOpen) {
             try {
                 if (!editBookData.htmlUsage && editBookData.htmlUsage !== '') {
-                    setLoadingTxt('Loading...');
+                    setLoadingTxt(`${t('loading')}...`);
                     if (!id) { throw new Error('not found id'); }
                     const [_, res]: [void, AxiosResponse<BT.HtmlUsageType>] = await Promise.all([
                         setTime(200),
@@ -418,8 +413,8 @@ const EditBook = () => {
                 }
                 setIsHtmlUsageOpen(true);
             } catch (error) {
-                console.error('Failed to fetch html Usage content', error);
-                setErrorMessage('Failed to fetch html Usage content')
+                console.error(t('fetchFailedHtmlUsage'), error);
+                setErrorMessage(t('fetchFailedHtmlUsage'))
             } finally {
                 setLoadingTxt('');
             }
@@ -510,7 +505,6 @@ const EditBook = () => {
         const file = e.dataTransfer.files[0]; // ドロップされたファイルを取得
         if (file) {
             setFileName(file.name);
-            // DataTransferオブジェクトを使用してFileListを作成
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
             await uploadPreviewImage(file);
@@ -537,7 +531,7 @@ const EditBook = () => {
         // ファイル拡張子の取得
         const extension: string = getFileExtension(file.name);
         if (!extension) {
-            setErrorMessage('Invalid extension.');
+            setErrorMessage(t('invalidExtension'));
             return;
         }
 
@@ -545,19 +539,13 @@ const EditBook = () => {
         const validExtensions = ['jpg', 'png', 'webp'];
         const coverExtension = validExtensions.includes(extension) ? extension : 'jpg';
 
-        // ファイル名を生成
-        const coverTitle = `${editBookData.title}_cover.${coverExtension}`;
-
-        // FormDataにファイルを追加
+        const coverFileName = `${editBookData.title}_cover.${coverExtension}`;
         const formData = new FormData();
-        formData.append('cover', file, coverTitle);
+        formData.append('cover', file, coverFileName);
         formData.append('directory', 'cover');
 
-        // 認証トークンを取得
         const token = localStorage.getItem('token');
-
         try {
-            // 画像アップロードのリクエスト
             const res: AxiosResponse<BT.CoverImageData> = await axios.post<BT.CoverImageData>(
                 `${API_ENDPOINTS.uploadCoverImage()}`,
                 formData,
@@ -571,9 +559,9 @@ const EditBook = () => {
 
             // 成功時の処理
             setImagePreviewId(res.data.id);
-            setSuccessMessage('The image was uploaded.');
+            setSuccessMessage(t('successUploadImage'));
         } catch (error) {
-            setErrorMessage('Image upload failed.');
+            setErrorMessage(t('uploadImageFailed'));
             console.error(error);
         }
     };
@@ -581,10 +569,6 @@ const EditBook = () => {
     const usePreviewImage = async (e: React.MouseEvent<HTMLImageElement>) => {
         e.preventDefault();
         if (!imagePreviewId) { return setErrorMessage('No image selected'); }
-        // const data = await fetch(imagePreviewId);
-        // const blob = await data.blob();
-        // const copyImagePreview = URL.createObjectURL(blob);
-        // URL.revokeObjectURL(imagePreviewId);
         setEditBookData((prev) => ({
             ...prev,
             coverImageId: imagePreviewId,

@@ -1,13 +1,14 @@
 import axios, { AxiosResponse } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { FaSpinner } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 
 import { useState, useEffect } from 'react';
 
-import HtmlEditor from '../Editor/HtmlEditor';
 import MarkdownEditor from '../Editor/MarkdownEditor';
 import { API_ENDPOINTS } from "../../api/urls";
 import * as BT from '../../types/BookTypes';
+import { useGlobalState } from '../../context/GlobalStateProvider';
 
 const CreateBook = () => {
     const navigate = useNavigate();
@@ -25,19 +26,15 @@ const CreateBook = () => {
     };
 
     const [newBook, setNewBook] = useState<BT.BookDataType>(initData);
-
     const [isMdTocOpen, setIsMdTocOpen] = useState<boolean>(false);
     const [isMdBodyOpen, setIsMdBodyOpen] = useState<boolean>(false);
     const [isHtmlBodyOpen, setIsHtmlBodyOpen] = useState<boolean>(false);
     const [isMdUsageOpen, setIsMdUsageOpen] = useState<boolean>(false);
     const [isHtmlUsageOpen, setIsHtmlUsageOpen] = useState<boolean>(false);
     const [isMdSummaryOpen, setIsMdSummaryOpen] = useState<boolean>(false);
-
-    const [loading, setLoading] = useState<string>('');
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [warningMessage, setWarningMessage] = useState<string | null>(null);
     const [buttonDisabled, setButtonDisabled] = useState(false);
+    const { setSuccessMessage, setErrorMessage } = useGlobalState();
+    const { t } = useTranslation();
 
     useEffect(() => {
         const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -52,18 +49,6 @@ const CreateBook = () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
     }, []);
-
-    useEffect(() => {
-        if (successMessage || errorMessage || warningMessage) {
-            const timer = setTimeout(() => {
-                setSuccessMessage(null);
-                setErrorMessage(null);
-                setWarningMessage(null);
-            }, 3000); // 3秒後にメッセージを消す
-
-            return () => clearTimeout(timer); // クリーンアップ
-        }
-    }, [successMessage, errorMessage, warningMessage]);
 
     // バリデーション
     const requiredCheck = (): BT.RequiredFieldType | '' => {
@@ -99,7 +84,7 @@ const CreateBook = () => {
 
             const extractedData = extractCreateData();
 
-            const confirmMessage = `Are you sure create?`;
+            const confirmMessage = t('createConfirm');
             if (!window.confirm(confirmMessage)) { return; }
 
             const res: AxiosResponse<BT.BookDataType> = await axios.post<BT.BookDataType>(
@@ -107,10 +92,10 @@ const CreateBook = () => {
                 extractedData,
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            setSuccessMessage('Book created successfully!');
+            setSuccessMessage(t('createSuccess', {title: res.data.title}));
             await setTime(1000, () => navigate('/books'));
         } catch (e) {
-            setErrorMessage("Failed to Update");
+            setErrorMessage(t('createFailed'));
         } finally {
             setButtonDisabled(false);
         }
@@ -192,18 +177,18 @@ const CreateBook = () => {
         <div className="container flex justify-center w-full mx-auto p-4 mt-12">
             <div className="w-full bg-white shadow-md rounded-lg p-6">
                 <div className="flex justify-between items-center mb-4">
-                    <h1 className="text-2xl font-bold">Create</h1>
+                    <h1 className="text-2xl font-bold">{t('create')}</h1>
                     <button
                         className="cursor-pointer bg-gray-300 text-gray-800 ml-2 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors text-sm font-medium"
                         onClick={() => navigate('/books')}
                     >
-                        Back
+                        {t('back')}
                     </button>
                 </div>
                 <form onSubmit={handleCreate} className="space-y-4 w-full h-full">
                     <div>
                         <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                            Title
+                            {t('title')}
                         </label>
                         <input
                             id="title"
@@ -216,7 +201,7 @@ const CreateBook = () => {
                     </div>
                     <div>
                         <label htmlFor="author" className="block text-sm font-medium text-gray-700 mb-1">
-                            Author
+                            {t('author')}
                         </label>
                         <input
                             id="author"
@@ -229,7 +214,7 @@ const CreateBook = () => {
                     </div>
                     <div>
                         <label htmlFor="genre" className="block text-sm font-medium text-gray-700 mb-1">
-                            Genre
+                            {t('genre')}
                         </label>
                         <input
                             id="genre"
@@ -242,12 +227,12 @@ const CreateBook = () => {
                     </div>
                     <div>
                         <label htmlFor="toc" className="block text-sm font-medium text-gray-700 mb-1">
-                            Table Of Contents
+                            {t('toc')}
                         </label>
                         <textarea
                             id="toc"
                             name="toc"
-                            placeholder="Table of Contents"
+                            placeholder={t('toc')}
                             onChange={handleInputChange}
                             value={newBook.toc || ''}
                             className="hidden"
@@ -259,13 +244,13 @@ const CreateBook = () => {
                             className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400"
                         >
                             <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
-                                Open Markdown Editor
+                                {t('openMDE')}
                             </span>
                         </button>
                     </div>
                     <div>
                         <label htmlFor="htmlBody" className="block text-sm font-medium text-gray-700 mb-1">
-                            Body
+                            {t('body')}
                         </label>
                         <textarea
                             id="mdBody"
@@ -281,10 +266,10 @@ const CreateBook = () => {
                             className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400"
                         >
                             <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
-                                Open Markdown Editor
+                                {t('openMDE')}
                             </span>
                         </button>
-                        <textarea
+                        {/* <textarea
                             id="htmlBody"
                             name="htmlBody"
                             placeholder="HtmlBody"
@@ -300,11 +285,11 @@ const CreateBook = () => {
                             <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
                                 Open Html Editor
                             </span>
-                        </button>
+                        </button> */}
                     </div>
                     <div>
                         <label htmlFor="htmlUsage" className="block text-sm font-medium text-gray-700 mb-1">
-                            Usage
+                            {t('usage')}
                         </label>
                         <textarea
                             id="mdUsage"
@@ -320,10 +305,10 @@ const CreateBook = () => {
                             className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400"
                         >
                             <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
-                                Open Markdown Editor
+                                {t('openMDE')}
                             </span>
                         </button>
-                        <textarea
+                        {/* <textarea
                             id="htmlUsage"
                             name="htmlUsage"
                             placeholder="htmlUsage"
@@ -339,7 +324,7 @@ const CreateBook = () => {
                             <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
                                 Open Html Editor
                             </span>
-                        </button>
+                        </button> */}
                     </div>
                     <div>
                         {/* <label htmlFor="coverImageId" className="block text-sm font-medium text-gray-700 mb-1">
@@ -356,12 +341,12 @@ const CreateBook = () => {
                     </div>
                     <div>
                         <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-1">
-                            Language
+                            {t('language')}
                         </label>
                         <input
                             id="language"
                             name="language"
-                            placeholder="Language"
+                            placeholder={t('language')}
                             onChange={handleInputChange}
                             value={newBook.language || ''}
                             className="w-full p-2 border border-gray-300 rounded"
@@ -369,12 +354,12 @@ const CreateBook = () => {
                     </div>
                     <div>
                         <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-1">
-                            Summary
+                            {t('summary')}
                         </label>
                         <textarea
                             id="summary"
                             name="summary"
-                            placeholder="Summary"
+                            placeholder={t('summary')}
                             onChange={handleInputChange}
                             value={newBook.summary || ''}
                             className="hidden"
@@ -385,7 +370,7 @@ const CreateBook = () => {
                             className="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-red-200 via-red-300 to-yellow-200 group-hover:from-red-200 group-hover:via-red-300 group-hover:to-yellow-200 dark:text-white dark:hover:text-gray-900 focus:ring-4 focus:outline-none focus:ring-red-100 dark:focus:ring-red-400"
                         >
                             <span className="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
-                                Open Markdown Editor
+                                {t('openMDE')}
                             </span>
                         </button>
                     </div>
@@ -400,7 +385,7 @@ const CreateBook = () => {
                                 isPublished: e.target.checked,
                             }))}
                         />
-                        <label>Published</label>
+                        <label>{t('published')}</label>
                     </div>
                     <div>
                         <label htmlFor="kindle" className="block text-sm font-medium text-gray-700 mb-1">
@@ -427,118 +412,76 @@ const CreateBook = () => {
                         {buttonDisabled ? (
                             <FaSpinner className="animate-spin inline-block" />
                         ) : (
-                            'Create'
+                            t('create')
                         )}
                     </button>
                 </form>
             </div>
 
-            <MarkdownEditor
-                bookData={newBook}
-                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"toc"}
-                isOpen={isMdTocOpen}
-                editorTitle={"Markdown Table Of Contents Editor"}
-                onClose={toggleMdTocEditor}
-            />
-
-            <MarkdownEditor
-                bookData={newBook}
-                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"mdBody"}
-                isOpen={isMdBodyOpen}
-                editorTitle={"Markdown Body Editor"}
-                onClose={toggleMdBodyEditor}
-            />
-
-            <HtmlEditor
-                bookData={newBook}
-                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"htmlBody"}
-                isOpen={isHtmlBodyOpen}
-                editorTitle={"Html Body Editor"}
-                onClose={toggleHtmlBodyEditor}
-            />
-
-            <MarkdownEditor
-                bookData={newBook}
-                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"mdUsage"}
-                isOpen={isMdUsageOpen}
-                editorTitle={"Markdown Usage Editor"}
-                onClose={toggleMdUsageEditor}
-            />
-
-            <HtmlEditor
-                bookData={newBook}
-                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"htmlUsage"}
-                isOpen={isHtmlUsageOpen}
-                editorTitle={"Html Usage Editor"}
-                onClose={toggleHtmlUsageEditor}
-            />
-
-            <MarkdownEditor
-                bookData={newBook}
-                handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
-                contentType={"summary"}
-                isOpen={isMdSummaryOpen}
-                editorTitle={"Markdown Summary Editor"}
-                onClose={toggleMdSummaryEditor}
-            />
-
-            {successMessage && (
-                <div className="fixed top-4 inset-x-0 flex justify-center items-center">
-                    <div className="bg-green-500 text-white px-4 py-2 rounded shadow-lg w-1/3 text-center">
-                        <p
-                            dangerouslySetInnerHTML={{ __html: successMessage }}
-                        />
-                    </div>
-                </div>
+            {isMdTocOpen && (
+                <MarkdownEditor
+                    bookData={newBook}
+                    handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"toc"}
+                    isOpen={isMdTocOpen}
+                    editorTitle={"Markdown Editor" + ` - ${t('toc')}`}
+                    onClose={toggleMdTocEditor}
+                />
             )}
 
-            {warningMessage && (
-                <div className="fixed top-4 inset-x-0 flex justify-center items-center">
-                    <div className="bg-yellow-500 text-white px-4 py-2 rounded shadow-lg w-1/3 text-center">
-                        <p>{warningMessage}</p>
-                    </div>
-                </div>
+            {isMdBodyOpen && (
+                <MarkdownEditor
+                    bookData={newBook}
+                    handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"mdBody"}
+                    isOpen={isMdBodyOpen}
+                    editorTitle={"Markdown Editor" + ` - ${t('body')}`}
+                    onClose={toggleMdBodyEditor}
+                />
             )}
 
-            {errorMessage && (
-                <div className="fixed top-4 inset-x-0 flex justify-center items-center">
-                    <div className="bg-red-500 text-white px-4 py-2 rounded shadow-lg w-1/3 text-center">
-                        <p>{errorMessage}</p>
-                    </div>
-                </div>
+            {/* {isHtmlBodyOpen && (
+                <HtmlEditor
+                    bookData={newBook}
+                    handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"htmlBody"}
+                    isOpen={isHtmlBodyOpen}
+                    editorTitle={"HTML Editor" + ` - ${t('body')}`}
+                    onClose={toggleHtmlBodyEditor}
+                />
+            )} */}
+
+            {isMdUsageOpen && (
+                <MarkdownEditor
+                    bookData={newBook}
+                    handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"mdUsage"}
+                    isOpen={isMdUsageOpen}
+                    editorTitle={"Markdown Editor" + ` - ${t('usage')}`}
+                    onClose={toggleMdUsageEditor}
+                />
             )}
 
-            {loading && (
-                <div className="fixed inset-0 bg-gray-800 bg-opacity-60 flex items-center justify-center z-50 w-full h-full">
-                    <div className="flex flex-col items-center">
-                        <svg
-                            className="animate-spin h-12 w-12 text-white mb-4"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                        >
-                            <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                            ></circle>
-                            <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8v8h8a8 8 0 11-8 8V12H4z"
-                            ></path>
-                        </svg>
-                        <div className="text-white text-2xl">{loading}</div>
-                    </div>
-                </div>
+            {/* {isHtmlUsageOpen && (
+                <HtmlEditor
+                    bookData={newBook}
+                    handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"htmlUsage"}
+                    isOpen={isHtmlUsageOpen}
+                    editorTitle={"HTML Editor" + ` - ${t('usage')}`}
+                    onClose={toggleHtmlUsageEditor}
+                />
+            )} */}
+
+            {isMdSummaryOpen && (
+                <MarkdownEditor
+                    bookData={newBook}
+                    handleContentsChange={(contentType: string, newContent: string) => handleContentsChange(contentType, newContent)}
+                    contentType={"summary"}
+                    isOpen={isMdSummaryOpen}
+                    editorTitle={"Markdown Editor" + ` - ${t('summary')}`}
+                    onClose={toggleMdSummaryEditor}
+                />
             )}
         </div>
     );
