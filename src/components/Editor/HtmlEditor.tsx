@@ -144,7 +144,7 @@ ${htmlContent}
             className={`fixed m-0 top-0 right-0 h-full w-full bg-white shadow-lg z-30 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
         >
             <div className="p-2 pl-4 pr-4 flex justify-between items-center border-b">
-                <h2 className="text-xl font-bold">{editorTitle}</h2>
+                <h2 className="text-xl font-bold">HTML Editor - {editorTitle}</h2>
                 <div className="space-x-2">
                     <button
                         onClick={loadHtml}

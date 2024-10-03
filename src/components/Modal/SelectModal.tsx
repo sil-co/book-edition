@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FaSpinner } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
 
 import { useGlobalState } from '../../context/GlobalStateProvider';
 import * as BT from '../../types/BookTypes';
@@ -29,6 +30,7 @@ const SelectModal = ({
     const [selectedContent, setSelectedContent] = useState<BT.ContentOption[]>(contentOptions);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const { setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
+    const { t } = useTranslation();
 
     const handleContentChange = (id: string) => {
         setSelectedContent(prev =>
@@ -72,7 +74,7 @@ const SelectModal = ({
                 }
             );
             const contentDisposition = res.headers['content-disposition'];
-            let fileName = `$downloaded_file.zip`; // デフォルトのファイル名
+            let fileName = `downloaded_file.zip`; // デフォルトのファイル名
             if (contentDisposition) {
                 // UTF-8エンコードされたファイル名を処理
                 const utf8FilenameRegex = /filename\*=UTF-8''([\w%.-]+)/i;
@@ -100,11 +102,11 @@ const SelectModal = ({
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url); // URLを解放
-            setSuccessMessage('Successfully html downloaded.');
+            setSuccessMessage(t(t('dlSuccess')));
         } catch (error) {
             // console.error('An error occurred while downloading HTML:');
             console.error(error);
-            setErrorMessage('Failed to download html.');
+            setErrorMessage(t('dlFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -120,7 +122,7 @@ const SelectModal = ({
                             if (e.target === e.currentTarget && onClose) { onClose(); }
                         }}>
                         <div className="bg-white rounded-lg p-6 w-96">
-                            <h2 className="text-xl font-bold mb-4 select-none">Choose the content you want to include</h2>
+                            <h2 className="text-xl font-bold mb-4 select-none">{t('chooseContent')}</h2>
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 {selectedContent.map(({ id, label, selected }) => (
                                     <div key={id} className="flex items-center space-x-2">
@@ -140,7 +142,7 @@ const SelectModal = ({
                                     className="select-none px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                                     onClick={onClose}
                                 >
-                                    Cancel
+                                    {t('cancel')}
                                 </button>
                                 <button
                                     onClick={handleZipDownload}
@@ -151,7 +153,7 @@ const SelectModal = ({
                                     {isLoading ? (
                                         <FaSpinner className="animate-spin inline-block mr-2" />
                                     ) : null}
-                                    Download Zip
+                                    {t('dlZip')}
                                 </button>
                             </div>
                         </div>

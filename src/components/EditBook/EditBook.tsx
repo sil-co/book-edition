@@ -108,8 +108,8 @@ const EditBook = () => {
             setUnEditedData(data);
             if (data.coverImageId) { setSelectedImageId(data.coverImageId); }
         } catch (error) {
-            console.error(t('fetchFailedBookData'), error);
-            setErrorMessage(t('fetchFailedBookData'));
+            console.error(t('fetchFailed'), error);
+            setErrorMessage(t('fetchFailed'));
         } finally {
             setLoadingTxt('');
         }
@@ -250,7 +250,7 @@ const EditBook = () => {
 
             if (!id) { throw new Error('not found id'); }
             const isGpt: boolean = await checkIsGpt(id);
-            if (isGpt) { return setWarningMessage(t('errorCanotUpdate')); }
+            if (isGpt) { return setWarningMessage(t('gptCanotUpdate')); }
 
             const token = localStorage.getItem('token');
             const res: AxiosResponse<BT.BookDataType> = await axios.put<BT.BookDataType>(
@@ -314,8 +314,8 @@ const EditBook = () => {
                 }
                 setIsMdBodyOpen(true);
             } catch (error) {
-                console.error(t('fetchFailedMdBody'), error);
-                setErrorMessage(t('fetchFailedMdBody'));
+                console.error(t('fetchFailed'), error);
+                setErrorMessage(t('fetchFailed'));
             } finally {
                 setLoadingTxt('');
             }
@@ -347,8 +347,8 @@ const EditBook = () => {
                 }
                 setIsHtmlBodyOpen(true);
             } catch (error) {
-                console.error(t('fetchFailedHtmlBody'), error);
-                setErrorMessage(t('fetchFailedHtmlBody'));
+                console.error(t('fetchFailed'), error);
+                setErrorMessage(t('fetchFailed'));
             } finally {
                 setLoadingTxt('');
             }
@@ -380,8 +380,8 @@ const EditBook = () => {
                 }
                 setIsMdUsageOpen(true);
             } catch (error) {
-                console.error(t('fetchFailedMdUsage'), error);
-                setErrorMessage(t('fetchFailedMdUsage'));
+                console.error(t('fetchFailed'), error);
+                setErrorMessage(t('fetchFailed'));
             } finally {
                 setLoadingTxt('');
             }
@@ -413,8 +413,8 @@ const EditBook = () => {
                 }
                 setIsHtmlUsageOpen(true);
             } catch (error) {
-                console.error(t('fetchFailedHtmlUsage'), error);
-                setErrorMessage(t('fetchFailedHtmlUsage'))
+                console.error(t('fetchFailed'), error);
+                setErrorMessage(t('fetchFailed'))
             } finally {
                 setLoadingTxt('');
             }
@@ -559,16 +559,16 @@ const EditBook = () => {
 
             // 成功時の処理
             setImagePreviewId(res.data.id);
-            setSuccessMessage(t('successUploadImage'));
+            setSuccessMessage(t('uploadSuccess'));
         } catch (error) {
-            setErrorMessage(t('uploadImageFailed'));
+            setErrorMessage(t('uploadFailed'));
             console.error(error);
         }
     };
 
     const usePreviewImage = async (e: React.MouseEvent<HTMLImageElement>) => {
         e.preventDefault();
-        if (!imagePreviewId) { return setErrorMessage('No image selected'); }
+        if (!imagePreviewId) { return setErrorMessage(t('noImageSelected')); }
         setEditBookData((prev) => ({
             ...prev,
             coverImageId: imagePreviewId,
@@ -578,10 +578,10 @@ const EditBook = () => {
     }
 
     const handleDownloadClick = async () => {
-        if (!window.confirm(`Download selected image?`)) { return; }
+        if (!window.confirm(t('dlImageConfirm'))) { return; }
         try {
             let extension: string = getFileExtension(selectedImageId);
-            if (!extension) { return setErrorMessage('Invalid extension.'); }
+            if (!extension) { return setErrorMessage(t('invalidExtension')); }
             if (extension !== 'jpg' && extension !== 'png' && extension !== 'webp') { extension = 'jpg'; }
             const response = await fetch(selectedImageId);
             const blob = await response.blob();
@@ -594,8 +594,8 @@ const EditBook = () => {
             document.body.removeChild(link);
             URL.revokeObjectURL(blobUrl);
         } catch (error) {
-            console.error('Download failed:', error);
-            setErrorMessage('Failed to download the image.');
+            console.error(t('downloadFailed'), error);
+            setErrorMessage('downloadFailed');
         }
     };
 
@@ -631,7 +631,7 @@ const EditBook = () => {
                             {isDisabled ? (
                                 <FaSpinner className="animate-spin inline-block" />
                             ) : (
-                                'Back'
+                                t('back')
                             )}
                         </button>
                         <button
@@ -647,7 +647,7 @@ const EditBook = () => {
                             {isDisabled ? (
                                 <FaSpinner className="animate-spin inline-block" />
                             ) : (
-                                'Update'
+                                t('update')
                             )}
                         </button>
                     </div>
@@ -656,7 +656,7 @@ const EditBook = () => {
                 <form onSubmit={handleUpdate} className="space-y-4 w-full h-full">
                     <div>
                         <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                            Title
+                            {t('title')}
                         </label>
                         <input
                             id="title"
@@ -670,7 +670,7 @@ const EditBook = () => {
                     </div>
                     <div>
                         <label htmlFor="author" className="block text-sm font-medium text-gray-700 mb-1">
-                            Author
+                            {t('author')}
                         </label>
                         <input
                             id="author"
@@ -684,7 +684,7 @@ const EditBook = () => {
                     </div>
                     <div>
                         <label htmlFor="genre" className="block text-sm font-medium text-gray-700 mb-1">
-                            Genre
+                            {t('genre')}
                         </label>
                         <input
                             id="genre"
@@ -698,7 +698,7 @@ const EditBook = () => {
                     </div>
                     <div className="relative">
                         <label htmlFor="introduction" className="block text-sm font-medium text-gray-700 mb-1">
-                            Introduction
+                            {t('introduction')}
                         </label>
                         <textarea
                             id="introduction"
@@ -730,7 +730,7 @@ const EditBook = () => {
                     </div>
                     <div>
                         <label htmlFor="toc" className="block text-sm font-medium text-gray-700 mb-1">
-                            Table Of Contents
+                            {t('toc')}
                         </label>
                         <textarea
                             id="toc"
@@ -761,7 +761,7 @@ const EditBook = () => {
                     </div>
                     <div>
                         <label htmlFor="htmlBody" className="block text-sm font-medium text-gray-700 mb-1">
-                            Body
+                            {t('body')}
                         </label>
                         <textarea
                             id="mdBody"
@@ -785,11 +785,11 @@ const EditBook = () => {
                                 {isDisabled ? (
                                     <FaSpinner className="animate-spin inline-block" />
                                 ) : (
-                                    'Open Markdown Editor'
+                                    t('openMDE')
                                 )}
                             </span>
                         </button>
-                        <textarea
+                        {/* <textarea
                             id="htmlBody"
                             name="htmlBody"
                             placeholder="HtmlBody"
@@ -813,7 +813,7 @@ const EditBook = () => {
                                     'Open Html Editor'
                                 )}
                             </span>
-                        </button>
+                        </button> */}
                     </div>
                     <div>
                         <label htmlFor="htmlUsage" className="block text-sm font-medium text-gray-700 mb-1">
@@ -841,11 +841,11 @@ const EditBook = () => {
                                 {isDisabled ? (
                                     <FaSpinner className="animate-spin inline-block" />
                                 ) : (
-                                    'Open Markdown Editor'
+                                    t('openMDE')
                                 )}
                             </span>
                         </button>
-                        <textarea
+                        {/* <textarea
                             id="htmlUsage"
                             name="htmlUsage"
                             placeholder="htmlUsage"
@@ -869,11 +869,11 @@ const EditBook = () => {
                                     'Open Html Editor'
                                 )}
                             </span>
-                        </button>
+                        </button> */}
                     </div>
                     <div>
                         <label htmlFor="coverImageId" className="block text-sm font-medium text-gray-700 mb-1 select-none">
-                            Book Cover
+                            {t('bookCover')}
                         </label>
                         <textarea
                             id="coverImageId"
@@ -901,11 +901,11 @@ const EditBook = () => {
                                             ref={selectedImageRef}
                                         />
                                         <span className="absolute bottom-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-5 text-yellow-400 underline text-lg font-semibold  pointer-events-none">
-                                            Now selected
+                                            {t('nowSelected')}
                                         </span>
                                     </>
                                 ) : (
-                                    <span className="text-gray-400 text-sm select-none">Not selected</span>
+                                    <span className="text-gray-400 text-sm select-none">{t('notSelected')}</span>
                                 )}
                             </div>
                             <div className="flex items-center flex-col justify-around w-[100px]">
@@ -945,7 +945,7 @@ const EditBook = () => {
                                         {isDisabled ? (
                                             <FaSpinner className="animate-spin inline-block" />
                                         ) : (
-                                            'Use this'
+                                            t('usethis')
                                         )}
                                     </span>
                                     <button
@@ -991,11 +991,11 @@ const EditBook = () => {
                                             ref={previewImageRef}
                                         />
                                         <span className="absolute bottom-0 left-0 w-full h-full flex items-center underline justify-center bg-black bg-opacity-5 text-yellow-400 text-lg font-semibold pointer-events-none">
-                                            Preview
+                                            {t('preview')}
                                         </span>
                                     </>
                                 ) : (
-                                    <span className="text-gray-400 text-sm select-none">No preview</span>
+                                    <span className="text-gray-400 text-sm select-none">{t('noPreview')}</span>
                                 )}
                             </div>
                             <div
@@ -1015,7 +1015,7 @@ const EditBook = () => {
                                 />
                                 <div className="text-center">
                                     <span className="text-gray-500 text-sm">
-                                        {fileName || 'Select Image or drag and drop here'}
+                                        {fileName || t('infoDrag')}
                                     </span>
                                 </div>
                             </div>
@@ -1037,7 +1037,7 @@ const EditBook = () => {
                     </div>
                     <div className="relative">
                         <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-1">
-                            Summary
+                            {t('summary')}
                         </label>
                         <textarea
                             id="summary"
@@ -1061,7 +1061,7 @@ const EditBook = () => {
                                     {isDisabled ? (
                                         <FaSpinner className="animate-spin inline-block" />
                                     ) : (
-                                        'Open Markdown Editor'
+                                        t('openMDE')
                                     )}
                                 </span>
                             </button>
@@ -1069,7 +1069,7 @@ const EditBook = () => {
                     </div>
                     <div className="relative">
                         <label htmlFor="afterEnd" className="block text-sm font-medium text-gray-700 mb-1">
-                            AfterEnd
+                            {t('afterend')}
                         </label>
                         <textarea
                             id="afterEnd"
@@ -1093,7 +1093,7 @@ const EditBook = () => {
                                     {isDisabled ? (
                                         <FaSpinner className="animate-spin inline-block" />
                                     ) : (
-                                        'Open Markdown Editor'
+                                        t('openMDE')
                                     )}
                                 </span>
                             </button>
@@ -1101,7 +1101,7 @@ const EditBook = () => {
                     </div>
                     <div className="relative">
                         <label htmlFor="otherBooks" className="block text-sm font-medium text-gray-700 mb-1">
-                            OtherBooks
+                            {t('otherBooks')}
                         </label>
                         <textarea
                             id="otherBooks"
@@ -1125,7 +1125,7 @@ const EditBook = () => {
                                     {isDisabled ? (
                                         <FaSpinner className="animate-spin inline-block" />
                                     ) : (
-                                        'Open Markdown Editor'
+                                        t('openMDE')
                                     )}
                                 </span>
                             </button>
@@ -1145,12 +1145,12 @@ const EditBook = () => {
                             disabled={isDisabled}
                         />
                         <label htmlFor="isPublished" className="select-none cursor-pointer block text-sm font-medium text-gray-700">
-                            Published
+                            {t('published')}
                         </label>
                     </div>
                     <div>
                         <label htmlFor="kindle" className="block text-sm font-medium text-gray-700 mb-1">
-                            Kindle URL
+                            {t('urlKindle')}
                         </label>
                         <input
                             id="kindle"
@@ -1175,7 +1175,7 @@ const EditBook = () => {
                             {isDisabled ? (
                                 <FaSpinner className="animate-spin inline-block" />
                             ) : (
-                                'Update'
+                                t('update')
                             )}
                         </button>
                         <button
@@ -1186,7 +1186,7 @@ const EditBook = () => {
                             {isDisabled ? (
                                 <FaSpinner className="animate-spin inline-block" />
                             ) : (
-                                'Back'
+                                t('back')
                             )}
                         </button>
                     </div>
@@ -1213,10 +1213,10 @@ const EditBook = () => {
                     handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                     contentType={"introduction"}
                     isOpen={isIntroductionOpen}
-                    editorTitle={"Markdown Introduction Editor"}
+                    editorTitle={t('introduction')}
                     onClose={toggleIntroductionEditor}
                     gptButton={true}
-                    placeHolderText={"Introduction to the book"}
+                    placeHolderText={t('placeHolderIntroduction')}
                 />
             )}
 
@@ -1226,7 +1226,7 @@ const EditBook = () => {
                     handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                     contentType={"toc"}
                     isOpen={isMdTocOpen}
-                    editorTitle={"Markdown Table Of Contents Editor"}
+                    editorTitle={t('toc')}
                     onClose={toggleMdTocEditor}
                     gptButton={true}
                 />
@@ -1238,23 +1238,23 @@ const EditBook = () => {
                     handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                     contentType={"mdBody"}
                     isOpen={isMdBodyOpen}
-                    editorTitle={"Markdown Body Editor"}
+                    editorTitle={t('body')}
                     onClose={toggleMdBodyEditor}
                     gptButton={true}
                     loadable={true}
                 />
             )}
 
-            {isHtmlBodyOpen && (
+            {/* {isHtmlBodyOpen && (
                 <HtmlEditor
                     bookData={editBookData}
                     handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                     contentType={"htmlBody"}
                     isOpen={isHtmlBodyOpen}
-                    editorTitle={"Html Body Editor"}
+                    editorTitle={t('body')}
                     onClose={toggleHtmlBodyEditor}
                 />
-            )}
+            )} */}
 
 
             {isMdUsageOpen && (
@@ -1263,22 +1263,22 @@ const EditBook = () => {
                     handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                     contentType={"mdUsage"}
                     isOpen={isMdUsageOpen}
-                    editorTitle={"Markdown Usage Editor"}
+                    editorTitle={t('usage')}
                     onClose={toggleMdUsageEditor}
                     extract={true}
                 />
             )}
 
-            {isHtmlUsageOpen && (
+            {/* {isHtmlUsageOpen && (
                 <HtmlEditor
                     bookData={editBookData}
                     handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                     contentType={"htmlUsage"}
                     isOpen={isHtmlUsageOpen}
-                    editorTitle={"Html Usage Editor"}
+                    editorTitle={t('usage')}
                     onClose={toggleHtmlUsageEditor}
                 />
-            )}
+            )} */}
 
             {isMdSummaryOpen && (
                 <MarkdownEditor
@@ -1286,10 +1286,10 @@ const EditBook = () => {
                     handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                     contentType={"summary"}
                     isOpen={isMdSummaryOpen}
-                    editorTitle={"Markdown Summary Editor"}
+                    editorTitle={t('summary')}
                     onClose={toggleMdSummaryEditor}
                     gptButton={true}
-                    placeHolderText={"Book summary (as shown on the kindle page)"}
+                    placeHolderText={t('placeHolderSummary')}
                 />
             )}
 
@@ -1299,10 +1299,10 @@ const EditBook = () => {
                     handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                     contentType={"afterEnd"}
                     isOpen={isAfterEndOpen}
-                    editorTitle={"Markdown AfterEnd Editor"}
+                    editorTitle={t('afterend')}
                     onClose={toggleAfterEndEditor}
                     gptButton={true}
-                    placeHolderText={"Afterword, at the end of the book"}
+                    placeHolderText={t('placeHolcerAfterend')}
                 />
             )}
 
@@ -1312,9 +1312,9 @@ const EditBook = () => {
                     handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                     contentType={"otherBooks"}
                     isOpen={isOtherBooksOpen}
-                    editorTitle={"Markdown OtherBooks Editor"}
+                    editorTitle={t('otherBooks')}
                     onClose={toggleOtherBooksEditor}
-                    placeHolderText={"Introduction of my other books"}
+                    placeHolderText={t('placeHolderOtherBooks')}
                 />
             )}
 
@@ -1324,7 +1324,7 @@ const EditBook = () => {
                     handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                     contentType={"coverImageId"}
                     isOpen={isImageEditorOpen}
-                    editorTitle={"Image Gallery"}
+                    editorTitle={t('bookCover')}
                     onClose={toggleImageEditor}
                 />
             )}

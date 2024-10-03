@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { useState } from "react";
 
 const ConfirmModal = ({ message, onConfirm, onCancel }: {
@@ -5,6 +7,8 @@ const ConfirmModal = ({ message, onConfirm, onCancel }: {
     onConfirm: () => void,
     onCancel: () => void,
 }) => {
+    const { t } = useTranslation();
+
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full transform transition-all duration-300 ease-in-out">
@@ -14,13 +18,13 @@ const ConfirmModal = ({ message, onConfirm, onCancel }: {
                         className="px-5 py-2 bg-gray-400 text-white font-medium rounded-lg hover:bg-gray-500 hover:shadow-lg transition duration-300"
                         onClick={onCancel}
                     >
-                        Cancel
+                        {t('cancel')}
                     </button>
                     <button
                         className="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 hover:shadow-lg transition duration-300"
                         onClick={onConfirm}
                     >
-                        OK
+                        {t('ok')}
                     </button>
                 </div>
             </div>

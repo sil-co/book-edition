@@ -17,7 +17,7 @@ const Login: React.FC = () => {
         const searchParams = new URLSearchParams(location.search);
         const error = searchParams.get('error');
         if (error) {
-            setErrorMessage(error);
+            setErrorMessage(t('pleaseLogin'));
         }
     }, [location.search]);
 

@@ -8,6 +8,7 @@ import { useCodeMirror } from "@uiw/react-codemirror";
 import { css } from "@codemirror/lang-css";
 import { oneDark } from "@codemirror/theme-one-dark";
 import debounce from 'lodash/debounce';
+import { useTranslation } from 'react-i18next';
 
 import { useState, useEffect, useRef, useCallback, DragEvent, ChangeEvent } from 'react';
 
@@ -44,7 +45,6 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 }) => {
     const navigate = useNavigate();
     const { setSuccessMessage, setLoadingTxt, setErrorMessage } = useGlobalState();
-
     const [isStoppedGpt, setIsStoppedGpt] = useState<boolean>(false);
     const [currentWS, setCurrentWS] = useState<WebSocket | null>(null);
     const contentRef = useRef<HTMLDivElement>(null);
@@ -58,6 +58,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     const [isSyncing, setIsSyncing] = useState(false);
     const editorRef = useRef(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const { t } = useTranslation();
 
     const handleChangeCss = (value: string) => {
         handleContentsChange('defaultStyle', value);
@@ -149,7 +150,8 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             const hljsCss = await res.text();
             handleContentsChange('defaultStyle', mdCss + '\n' + hljsCss);
         } catch (error) {
-            console.error('Failed to fetch CSS:', error);
+            console.error(t('fetchFailed'), error);
+            setErrorMessage(t('fetchFailed'));
         }
     };
 
@@ -165,11 +167,11 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }, [handleContentsChange]);
 
     const runGpt = async () => {
-        if (!gptButton) return setErrorMessage("Can't Run GPT");
-        const confirmMessage = `Do you run GPT?`;
+        if (!gptButton) return setErrorMessage(t('gptCanotRun'));
+        const confirmMessage = t('gptRunConfirm');
         if (!window.confirm(confirmMessage)) { return; }
         try {
-            setLoadingTxt(`GPT Running...`);
+            setLoadingTxt(`${t('gptRunning')}...`);
             switch (contentType) {
                 case 'toc': {
                     const reqBodyGpt: OT.ReqBodyGpt = {
@@ -188,7 +190,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                     const newContent: string = bookData[contentType] || '' + gptResult;
                     handleContentsChange(contentType, newContent);
                     setBookDataContent(newContent);
-                    setSuccessMessage('GPT Output Successfully!');
+                    setSuccessMessage(t('gptSuccess'));
                     break;
                 }
                 case 'mdBody': {
@@ -220,9 +222,9 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                             gptResult += data.gptResult ? data.gptResult : '';
                             handleContentsChange(contentType, gptResult);
                             setBookDataContent(gptResult);
-                            setLoadingTxt(`GPT Running... ${data.gptProgress ? data.gptProgress : ''}`);
+                            setLoadingTxt(`${t('gptRunning')}... ${data.gptProgress ? data.gptProgress : ''}`);
                             if (data.status === 'finished') {
-                                setSuccessMessage('GPT Output Successfully!');
+                                setSuccessMessage(t('gptSuccess'));
                                 ws.close();
                             }
                         };
@@ -234,13 +236,14 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         };
 
                         ws.onerror = (error) => {
-                            console.error('WebSocket error occurred:', error);
-                            reject('WebSocket connection failed');
+                            console.error(t('websocketFailed'), error);
+                            reject(t('websocketFailed'));
                         };
                     }).then(() => {
                         setIsStoppedGpt(false);
                     }).catch(e => {
                         console.error(e);
+                        setErrorMessage(t(''))
                     }).finally(() => {
                         setIsStoppedGpt(false);
                     });
@@ -275,7 +278,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                     const newContent: string = bookData[contentType] || '' + gptResult;
                     handleContentsChange(contentType, newContent);
                     setBookDataContent(newContent);
-                    setSuccessMessage('GPT Output Successfully!');
+                    setSuccessMessage(t('gptSuccess'));
                     break;
                 }
                 case 'afterEnd': {
@@ -295,7 +298,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                     const newContent: string = bookData[contentType] || '' + gptResult;
                     handleContentsChange(contentType, newContent);
                     setBookDataContent(newContent);
-                    setSuccessMessage('GPT Output Successfully!');
+                    setSuccessMessage(t('gptSuccess'));
                     break;
                 }
                 default: {
@@ -303,7 +306,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                 }
             }
         } catch (e) {
-            setErrorMessage('Failed GPT Output. Please try again.');
+            setErrorMessage(t('gptFailed'));
             console.error(e)
         } finally {
             setLoadingTxt('');
@@ -311,27 +314,27 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }
 
     const loadTemporaryGpt = async () => {
-        if (!gptButton || !bookData.id) { return setErrorMessage("Can't Run GPT.") };
+        if (!gptButton || !bookData.id) { return setErrorMessage(t('gptCanotRun')) };
         try {
-            const confirmMessage = `Load previous GPT output?`;
+            const confirmMessage = t('loadGptConfirm');
             if (!window.confirm(confirmMessage)) { return; }
-            setLoadingTxt(`GPT Loading...`);
+            setLoadingTxt(`${t('gptLoading')}...`);
             const res: AxiosResponse<BT.TemporaryGptType> = await axios.get<BT.TemporaryGptType>(API_ENDPOINTS.getTemporaryGpt(bookData.id));
             const temporaryGpt = res.data.temporaryGpt;
-            if (!temporaryGpt) { return setErrorMessage('There is no content.'); }
+            if (!temporaryGpt) { return setErrorMessage(t('gptNoPrevious')); }
             const newContent = (bookData[contentType] || '') + '\n' + temporaryGpt;
 
             handleContentsChange(contentType, newContent);
-            setSuccessMessage('GPT Output Successfully!');
+            setSuccessMessage(t('gptSuccess'));
         } catch (e) {
-            setErrorMessage('Failed GPT Output. Please try again.');
+            setErrorMessage(t('loadGptFailed'));
         } finally {
             setLoadingTxt('');
         }
     }
 
     const stopGpt = async () => {
-        const confirmMessage = `If you stop, the next time GPT output will have to start from the beginning. \nIs this OK?`;
+        const confirmMessage = t('stopGptConfirm');
         if (!window.confirm(confirmMessage)) { return; }
         const reqBodyGpt: OT.ReqStopGpt = {
             id: String(bookData.id),
@@ -344,7 +347,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
     const downloadMarkdown = () => {
         try {
-            const confirmMessage = `Download this markdown?`;
+            const confirmMessage = t('dlMdConfirmt');
             if (!window.confirm(confirmMessage)) { return; }
             const content = bookData[contentType];
             if (!content) { return setErrorMessage('No content.'); }
@@ -357,15 +360,15 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            setSuccessMessage('Successfully markdown file download!');
+            setSuccessMessage(t('dlSuccess'));
         } catch (error) {
-            setErrorMessage("Failed to download");
+            setErrorMessage(t('dlFailed'));
         }
     };
 
     const handleHtmlDownload = async () => {
         try {
-            const confirmMessage = `Download this html?`;
+            const confirmMessage = t('dlHtmlConfirm');
             if (!window.confirm(confirmMessage)) { return; }
             if (contentInnerRef.current) {
                 const htmlContent = contentInnerRef.current.innerHTML;
@@ -388,10 +391,10 @@ ${htmlContent}
                 link.download = `${bookData.title}_${contentType}.html`;
                 link.click();
                 URL.revokeObjectURL(link.href);
-                setSuccessMessage('Successfully html file download!')
+                setSuccessMessage(t('dlSuccess'))
             }
         } catch (error) {
-            setErrorMessage("Failed to download");
+            setErrorMessage(t('dlFailed'));
         }
     };
 
@@ -405,8 +408,8 @@ ${htmlContent}
 
     const resetCss = async () => {
         try {
-            setLoadingTxt('CSS Resetting...');
-            const confirmMessage = `Reset css?`;
+            setLoadingTxt(`${t('resettingCss')}...`);
+            const confirmMessage = t('resetCssConfirm');
             if (!window.confirm(confirmMessage)) { return; }
             await getCss();
         } catch (e) {
@@ -418,7 +421,7 @@ ${htmlContent}
 
     const extractHeadersAndCode = async () => {
         try {
-            const confirmMessage = `Extract headers and code from body?`;
+            const confirmMessage = t('extractConfirm');
             if (!window.confirm(confirmMessage)) { return ''; }
             const token = localStorage.getItem('token');
             const res: AxiosResponse<string> = await axios.post<string>(
@@ -429,9 +432,9 @@ ${htmlContent}
             const newContent: string = bookData[contentType] || '' + res.data;
             handleContentsChange(contentType, newContent);
             setBookDataContent(newContent);
-            setSuccessMessage('Successfully! Ectract Usage');
+            setSuccessMessage(t('extractSuccess'));
         } catch (e) {
-            setErrorMessage('Failed Extract Usage');
+            setErrorMessage(t('extractFailed'));
         }
     };
 
@@ -443,7 +446,7 @@ ${htmlContent}
         // ファイル拡張子の取得
         const extension: string = getFileExtension(file.name);
         if (!extension) {
-            setErrorMessage('Invalid extension.');
+            setErrorMessage(t('invalidExtension'));
             return;
         }
 
@@ -476,7 +479,7 @@ ${htmlContent}
             );
             return res.data;
         } catch (error) {
-            setErrorMessage('Image upload failed.');
+            setErrorMessage(t('uploadFailed'));
             console.error(error);
         }
     };
@@ -515,7 +518,7 @@ ${htmlContent}
                 }, 0);
             } catch (error) {
                 console.error("Image upload failed", error);
-                setErrorMessage("Image upload failed");
+                setErrorMessage(t('uploadFailed'));
             } finally {
                 setIsUpdateMarkdown(false);
             }
@@ -552,7 +555,7 @@ ${htmlContent}
             <div className={`fixed m-0 top-0 right-0 h-full w-full bg-white shadow-lg z-20 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 <div className="p-3 flex justify-between items-center border-b">
                     <div className="flex">
-                        <h2 className="text-xl font-bold mr-2">{editorTitle}</h2>
+                        <h2 className="text-xl font-bold mr-2">Markdown Editor - {editorTitle}</h2>
                     </div>
                     <div className="space-x-2">
                         {/* Todo: まずはhtmlでいい。その後epubが必要なら作る。 */}
@@ -569,7 +572,7 @@ ${htmlContent}
                                 onClick={resetCss}
                                 className="bg-blue-500 text-white px-3 py-1 rounded w-16"
                             >
-                                Reset
+                                {t('reset')}
                             </button>
                         )}
                         {extract && (
@@ -577,7 +580,7 @@ ${htmlContent}
                                 onClick={extractHeadersAndCode}
                                 className="bg-blue-500 text-white px-2 py-1 rounded w-18"
                             >
-                                Extract
+                                {t('extract')}
                             </button>
                         )}
                         <button
@@ -599,7 +602,7 @@ ${htmlContent}
                                 onClick={loadTemporaryGpt}
                                 className="bg-blue-500 text-white px-3 py-1 rounded w-16"
                             >
-                                Load
+                                {t('load')}
                             </button>
                         )}
                         {gptButton && (
@@ -614,7 +617,7 @@ ${htmlContent}
                             onClick={onClose}
                             className="bg-red-500 text-white px-3 py-1 rounded w-16"
                         >
-                            Close
+                            {t('close')}
                         </button>
                     </div>
                 </div>
@@ -639,7 +642,7 @@ ${htmlContent}
                             checked={isScrollSync}
                         />
                         <div className="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                        <span className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">Scroll Sync</span>
+                        <span className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">{t('scrollSync')}</span>
                     </label>
                 </div>
                 <div className="flex flex-col pl-4 pr-4 pb-4 pt-1 h-full md:flex-row">
@@ -647,7 +650,7 @@ ${htmlContent}
                         <textarea
                             ref={textareaRef}
                             name="markdown"
-                            placeholder={`${placeHolderText ? placeHolderText : "Markdown content"}`}
+                            placeholder={`${placeHolderText ? placeHolderText : t('placeHolderMdContent')}`}
                             onChange={handleInputChange}
                             defaultValue={bookData[contentType]}
                             onDrop={handleDrop}
@@ -686,7 +689,7 @@ ${htmlContent}
                     onClick={stopGpt}
                     className="bg-red-500 hover:bg-red-800 text-white px-3 py-1 rounded w-16 z-40 fixed top-[60%] border border-white"
                 >
-                    Stop
+                    {t('stop')}
                 </button>
             )}
         </>

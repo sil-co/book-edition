@@ -81,36 +81,6 @@ const App = () => {
         <GlobalStateProvider>
             <I18nextProvider i18n={i18n}>
                 <Router>
-                    {/* <nav className="bg-gray-900 p-4 text-white shadow-lg fixed w-full top-0 z-20">
-                    <div className="container mx-auto flex justify-between items-center">
-                        <div className="text-lg font-bold">
-                            <Link to="/">Auto Writing</Link>
-                        </div>
-                        <ul className="flex space-x-6">
-                            <li>
-                                <Link
-                                    to="/"
-                                    className="hover:text-gray-300 transition-colors duration-200">
-                                    Home
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    to="/register"
-                                    className="hover:text-gray-300 transition-colors duration-200">
-                                    Register
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
-                                    to="/login"
-                                    className="hover:text-gray-300 transition-colors duration-200">
-                                    Login
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-                </nav> */}
                     <Navbar changeLanguage={changeLanguage} />
                     <div className="">
                         <AppContent />
