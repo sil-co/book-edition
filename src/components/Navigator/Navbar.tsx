@@ -13,7 +13,17 @@ const Navbar: React.FC<NavbarProps> = ({ changeLanguage }) => {
 
     const languages = [
         { code: "en", label: "English" },
+        { code: "zh", label: "中文" },
+        { code: "hi", label: "हिन्दी" },
+        { code: "es", label: "Español" },
+        { code: "bn", label: "বাংলা" },
+        { code: "fr", label: "Français" },
+        { code: "ru", label: "Русский" },
+        { code: "pt", label: "Português" },
+        { code: "id", label: "Bahasa Indonesia" },
+        { code: "de", label: "Deutsch" },
         { code: "ja", label: "日本語" },
+        { code: "ko", label: "한국어" },
     ];
 
     return (

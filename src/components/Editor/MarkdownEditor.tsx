@@ -167,7 +167,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }, [handleContentsChange]);
 
     const runGpt = async () => {
-        if (!gptButton) return setErrorMessage(t('gptCanotRun'));
+        if (!gptButton) return setErrorMessage(t('gptCannotRun'));
         const confirmMessage = t('gptRunConfirm');
         if (!window.confirm(confirmMessage)) { return; }
         try {
@@ -314,7 +314,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }
 
     const loadTemporaryGpt = async () => {
-        if (!gptButton || !bookData.id) { return setErrorMessage(t('gptCanotRun')) };
+        if (!gptButton || !bookData.id) { return setErrorMessage(t('gptCannotRun')) };
         try {
             const confirmMessage = t('loadGptConfirm');
             if (!window.confirm(confirmMessage)) { return; }
@@ -347,7 +347,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
     const downloadMarkdown = () => {
         try {
-            const confirmMessage = t('dlMdConfirmt');
+            const confirmMessage = t('dlMdConfirm');
             if (!window.confirm(confirmMessage)) { return; }
             const content = bookData[contentType];
             if (!content) { return setErrorMessage('No content.'); }

@@ -8,7 +8,7 @@ i18n
     .use(LanguageDetector) // ユーザーのブラウザ言語を検出
     .use(initReactI18next) // Reactでi18nを使用可能にする
     .init({
-        supportedLngs: ['en', 'ja'], // サポートする言語
+        supportedLngs: ['en', 'zh', 'hi', 'es', 'bn', 'fr', 'ru', 'pt', 'id', 'de', 'ja', 'ko'], // サポートする言語
         fallbackLng: 'en', // 言語が見つからない場合に使用するデフォルト言語
         detection: {
             order: ['localStorage', 'cookie', 'navigator'], // 言語の検出順序

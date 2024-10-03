@@ -94,7 +94,7 @@ const EditBook = () => {
             if (!id) { throw new Error('not found id'); }
             const isGpt: boolean = await checkIsGpt(id);
             if (isGpt) {
-                setWarningMessage(t('gptCanotDisplay'));
+                setWarningMessage(t('gptCannotDisplay'));
                 await setTime(2000, () => navigate('/books'));
                 return;
             }
@@ -116,7 +116,7 @@ const EditBook = () => {
     };
 
     const setNewSelectedImage = async (selectedImageId: string) => {
-        if (!selectedImageId) { return setErrorMessage(t('canotSelect')) }
+        if (!selectedImageId) { return setErrorMessage(t('cannotSelect')) }
         const res: AxiosResponse<BT.CoverImageData> = await axios.get<BT.CoverImageData>(API_ENDPOINTS.getCoverImage(selectedImageId));
         const imagePath = res.data.imagePath || '';
         const newImagePath = `${imagePath}?t=${new Date().getTime()}`;
@@ -175,7 +175,7 @@ const EditBook = () => {
             case 'introduction':
                 return t('introduction');
             case 'afterEnd':
-                return t('afterend');
+                return t('afterEnd');
             case 'otherBooks':
                 return t('otherBooks');
             case 'publishedAt':
@@ -250,7 +250,7 @@ const EditBook = () => {
 
             if (!id) { throw new Error('not found id'); }
             const isGpt: boolean = await checkIsGpt(id);
-            if (isGpt) { return setWarningMessage(t('gptCanotUpdate')); }
+            if (isGpt) { return setWarningMessage(t('gptCannotUpdate')); }
 
             const token = localStorage.getItem('token');
             const res: AxiosResponse<BT.BookDataType> = await axios.put<BT.BookDataType>(
@@ -456,7 +456,7 @@ const EditBook = () => {
         }
     }
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setEditBookData((prev) => ({
             ...prev,
@@ -621,7 +621,7 @@ const EditBook = () => {
         <div className="container flex justify-center w-full mx-auto p-0 sm:p-4 mt-12">
             <div className="w-full bg-white shadow-md rounded-lg p-2 sm:p-6">
                 <div className="flex justify-between items-center mb-4">
-                    <h1 className="text-2xl font-bold">Edit</h1>
+                    <h1 className="text-2xl font-bold">Edit Page</h1>
                     <div className="flex justify-end">
                         <button
                             className="w-16 cursor-pointer bg-gray-300 text-gray-800 ml-2 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors text-sm font-medium"
@@ -945,7 +945,7 @@ const EditBook = () => {
                                         {isDisabled ? (
                                             <FaSpinner className="animate-spin inline-block" />
                                         ) : (
-                                            t('usethis')
+                                            t('useThis')
                                         )}
                                     </span>
                                     <button
@@ -1025,15 +1025,30 @@ const EditBook = () => {
                         <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-1">
                             Language
                         </label>
-                        <input
+                        <select
                             id="language"
                             name="language"
-                            placeholder="Language"
                             onChange={handleInputChange}
                             value={editBookData.language || ''}
-                            className="w-full p-2 border border-gray-300 rounded"
+                            className="p-2 border border-gray-300 rounded w-48"
                             disabled={isDisabled}
-                        />
+                        >
+                            <option value="">Select Language</option>
+                            <option value="en">English</option>
+                            <option value="zh">中文</option>
+                            <option value="hi">हिन्दी</option>
+                            <option value="es">Español</option>
+                            <option value="ar">العربية</option>
+                            <option value="bn">বাংলা</option>
+                            <option value="fr">Français</option>
+                            <option value="ru">Русский</option>
+                            <option value="pt">Português</option>
+                            <option value="ur">اردو</option>
+                            <option value="id">Bahasa Indonesia</option>
+                            <option value="de">Deutsch</option>
+                            <option value="ja">日本語</option>
+                            <option value="ko">한국어</option>
+                        </select>
                     </div>
                     <div className="relative">
                         <label htmlFor="summary" className="block text-sm font-medium text-gray-700 mb-1">
@@ -1069,7 +1084,7 @@ const EditBook = () => {
                     </div>
                     <div className="relative">
                         <label htmlFor="afterEnd" className="block text-sm font-medium text-gray-700 mb-1">
-                            {t('afterend')}
+                            {t('afterEnd')}
                         </label>
                         <textarea
                             id="afterEnd"
@@ -1299,10 +1314,10 @@ const EditBook = () => {
                     handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
                     contentType={"afterEnd"}
                     isOpen={isAfterEndOpen}
-                    editorTitle={t('afterend')}
+                    editorTitle={t('afterEnd')}
                     onClose={toggleAfterEndEditor}
                     gptButton={true}
-                    placeHolderText={t('placeHolcerAfterend')}
+                    placeHolderText={t('placeHolderAfterEnd')}
                 />
             )}
 

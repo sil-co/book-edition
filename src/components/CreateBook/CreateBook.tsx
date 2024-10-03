@@ -177,7 +177,7 @@ const CreateBook = () => {
         <div className="container flex justify-center w-full mx-auto p-4 mt-12">
             <div className="w-full bg-white shadow-md rounded-lg p-6">
                 <div className="flex justify-between items-center mb-4">
-                    <h1 className="text-2xl font-bold">{t('create')}</h1>
+                    <h1 className="text-2xl font-bold">Create Page</h1>
                     <button
                         className="cursor-pointer bg-gray-300 text-gray-800 ml-2 px-4 py-2 rounded-md hover:bg-gray-400 transition-colors text-sm font-medium"
                         onClick={() => navigate('/books')}

@@ -142,7 +142,7 @@ const MyBooks = () => {
                                 </button>
                                 {book.isGptRunning && (
                                     <div className="absolute inset-0 bg-emerald-700	bg-opacity-60 text-white flex p-1 sm:p-2 items-center justify-center rounded-lg">
-                                        <span className="text-2xl font-semibold">{t('gptCanotEdit', { gptProgress: book.gptProgress })}</span>
+                                        <span className="text-2xl font-semibold">{t('gptCannotEdit', { gptProgress: book.gptProgress })}</span>
                                         <span></span>
                                     </div>
                                 )}
