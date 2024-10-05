@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { I18nextProvider, useTranslation } from 'react-i18next';
 import './i18n'; // i18nの設定をインポート
 
@@ -71,7 +71,7 @@ const AppContent = () => {
 };
 
 const App = () => {
-    const { t, i18n } = useTranslation();
+    const { i18n } = useTranslation();
 
     const changeLanguage = (lng: string) => {
         i18n.changeLanguage(lng); // 言語を切り替える

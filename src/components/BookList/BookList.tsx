@@ -9,7 +9,7 @@ import { useGlobalState } from '../../context/GlobalStateProvider';
 
 const BookList = () => {
     const [books, setBooks] = useState<BT.BookDataType[]>([]);
-    const { setSuccessMessage, setErrorMessage } = useGlobalState();
+    const { setErrorMessage } = useGlobalState();
     const { t } = useTranslation();
 
     useEffect(() => {

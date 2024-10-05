@@ -28,7 +28,7 @@ const MyBooks = () => {
                 navigate("/login?error=unauthorized&source=mybook");
                 return;
             }
-            axios.get<BT.BookDataRequiredId[]>(API_ENDPOINTS.getBooksInit(), {
+            axios.get<BT.BookDataRequiredId[]>(API_ENDPOINTS.getBooks(), {
                 headers: { Authorization: `Bearer ${token}` },
             }).then((res) => {
                 const data = res.data;

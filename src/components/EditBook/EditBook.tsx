@@ -13,7 +13,6 @@ import HtmlEditor from '../Editor/HtmlEditor';
 import MarkdownEditor from '../Editor/MarkdownEditor';
 import ImageGallery from '../Editor/ImageGallery';
 import { API_ENDPOINTS, BASE_SAMPLE_URL } from "../../api/urls";
-import { checkIsGpt } from '../../api/gpt';
 import * as BT from '../../types/BookTypes';
 import { getFileExtension } from '../../utility/utility';
 
@@ -92,13 +91,17 @@ const EditBook = () => {
         try {
             setLoadingTxt(`${t('loading')}...`);
             if (!id) { throw new Error('not found id'); }
-            const isGpt: boolean = await checkIsGpt(id);
+            const token = localStorage.getItem('token');
+            const resIsGpt: AxiosResponse<BT.IsGptType> = await axios.get<BT.IsGptType>(
+                API_ENDPOINTS.getIsGpt(id),
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const isGpt = resIsGpt.data.isGptRunning;
             if (isGpt) {
                 setWarningMessage(t('gptCannotDisplay'));
                 await setTime(2000, () => navigate('/books'));
                 return;
             }
-            const token = localStorage.getItem('token');
             const res: AxiosResponse<BT.BookDataType> = await axios.get<BT.BookDataType>(
                 API_ENDPOINTS.getBook(id),
                 { headers: { Authorization: `Bearer ${token}` } }
@@ -249,10 +252,15 @@ const EditBook = () => {
             if (!window.confirm(confirmMessage)) { return; }
 
             if (!id) { throw new Error('not found id'); }
-            const isGpt: boolean = await checkIsGpt(id);
+            const token = localStorage.getItem('token');
+
+            const resIsGpt: AxiosResponse<BT.IsGptType> = await axios.get<BT.IsGptType>(
+                API_ENDPOINTS.getIsGpt(id),
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            const isGpt = resIsGpt.data.isGptRunning;
             if (isGpt) { return setWarningMessage(t('gptCannotUpdate')); }
 
-            const token = localStorage.getItem('token');
             const res: AxiosResponse<BT.BookDataType> = await axios.put<BT.BookDataType>(
                 API_ENDPOINTS.updateBook(id),
                 extractedData,
