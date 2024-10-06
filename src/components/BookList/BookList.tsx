@@ -15,7 +15,7 @@ const BookList = () => {
     useEffect(() => {
         axios.get<BT.BookDataType[]>(API_ENDPOINTS.getBooks())
             .then((res) => { setBooks(res.data); })
-            .catch((e) => setErrorMessage(t('fetchFailed')));
+            .catch(() => setErrorMessage(t('fetchFailed')));
     }, []);
 
 

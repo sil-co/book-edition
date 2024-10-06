@@ -28,9 +28,9 @@ const CreateBook = () => {
     const [newBook, setNewBook] = useState<BT.BookDataType>(initData);
     const [isMdTocOpen, setIsMdTocOpen] = useState<boolean>(false);
     const [isMdBodyOpen, setIsMdBodyOpen] = useState<boolean>(false);
-    const [isHtmlBodyOpen, setIsHtmlBodyOpen] = useState<boolean>(false);
+    // const [isHtmlBodyOpen, setIsHtmlBodyOpen] = useState<boolean>(false);
     const [isMdUsageOpen, setIsMdUsageOpen] = useState<boolean>(false);
-    const [isHtmlUsageOpen, setIsHtmlUsageOpen] = useState<boolean>(false);
+    // const [isHtmlUsageOpen, setIsHtmlUsageOpen] = useState<boolean>(false);
     const [isMdSummaryOpen, setIsMdSummaryOpen] = useState<boolean>(false);
     const [buttonDisabled, setButtonDisabled] = useState(false);
     const { setSuccessMessage, setErrorMessage } = useGlobalState();
@@ -125,27 +125,11 @@ const CreateBook = () => {
         }
     }
 
-    const toggleHtmlBodyEditor = async () => {
-        if (!isHtmlBodyOpen) {
-            setIsHtmlBodyOpen(true);
-        } else {
-            setIsHtmlBodyOpen(false);
-        }
-    };
-
     const toggleMdUsageEditor = async () => {
         if (!isMdUsageOpen) {
             setIsMdUsageOpen(true);
         } else {
             setIsMdUsageOpen(false);
-        }
-    }
-
-    const toggleHtmlUsageEditor = async () => {
-        if (!isHtmlUsageOpen) {
-            setIsHtmlUsageOpen(true);
-        } else {
-            setIsHtmlUsageOpen(false);
         }
     }
 

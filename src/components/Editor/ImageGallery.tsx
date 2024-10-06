@@ -18,18 +18,18 @@ interface EditorEditorProps {
 }
 
 const ImageGallery: React.FC<EditorEditorProps> = ({
-    bookData,
-    handleContentsChange,
+    // bookData,
+    // handleContentsChange,
     contentType,
-    onClose,
+    // onClose,
     isOpen,
     editorTitle,
-    setLoading,
-    loadable,
+    // setLoading,
+    // loadable,
     images, 
     defaultImage
 }) => {
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    // const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string>('');
     const [isImageModalOpen, setIsImageModalOpen] = useState<boolean>(false);
     const [fileName, setFileName] = useState<string>('');
@@ -82,7 +82,7 @@ const ImageGallery: React.FC<EditorEditorProps> = ({
             dataTransfer.items.add(file);
 
             setFileName(file.name);
-            setSelectedFile(file);
+            // setSelectedFile(file);
 
             // プレビューURLを解放してから新しく設定
             if (preview) {
@@ -98,7 +98,7 @@ const ImageGallery: React.FC<EditorEditorProps> = ({
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const file = e.target.files[0];
-            setSelectedFile(file);
+            // setSelectedFile(file);
 
             // 既存のプレビューURLを解放
             if (preview) {
@@ -124,32 +124,28 @@ const ImageGallery: React.FC<EditorEditorProps> = ({
         window.open(url, '_blank', 'noopener,noreferrer'); // 別タブで開く
     };
 
-    const runImgGpt = () => {
-        console.log('runImgGpt');
-    }
+    // const handleSubmit = async (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    //     e.preventDefault();
+    //     if (!selectedFile) return;
 
-    const handleSubmit = async (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        e.preventDefault();
-        if (!selectedFile) return;
+    //     const formData = new FormData();
+    //     formData.append(`${contentType}`, selectedFile);
 
-        const formData = new FormData();
-        formData.append(`${contentType}`, selectedFile);
+    //     try {
+    //         const response = await fetch('/upload', {
+    //             method: 'POST',
+    //             body: formData,
+    //         });
 
-        try {
-            const response = await fetch('/upload', {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                const newContent: string = result.filePath
-                handleContentsChange(contentType, newContent);
-            }
-        } catch (error) {
-            console.error('Error uploading file:', error);
-        }
-    };
+    //         if (response.ok) {
+    //             const result = await response.json();
+    //             const newContent: string = result.filePath
+    //             handleContentsChange(contentType, newContent);
+    //         }
+    //     } catch (error) {
+    //         console.error('Error uploading file:', error);
+    //     }
+    // };
 
     const testFn = () => {
         console.log('testFn');

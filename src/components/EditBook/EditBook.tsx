@@ -9,9 +9,9 @@ import { useTranslation } from 'react-i18next';
 import { useState, useEffect, useRef } from 'react';
 
 import { useGlobalState } from '../../context/GlobalStateProvider';
-import HtmlEditor from '../Editor/HtmlEditor';
+// import HtmlEditor from '../Editor/HtmlEditor';
 import MarkdownEditor from '../Editor/MarkdownEditor';
-import ImageGallery from '../Editor/ImageGallery';
+// import ImageGallery from '../Editor/ImageGallery';
 import { API_ENDPOINTS, BASE_SAMPLE_URL } from "../../api/urls";
 import * as BT from '../../types/BookTypes';
 import { getFileExtension } from '../../utility/utility';
@@ -32,11 +32,11 @@ const EditBook = () => {
     const [unEditedData, setUnEditedData] = useState<BT.BookDataType>(initData);
     const [isMdTocOpen, setIsMdTocOpen] = useState<boolean>(false);
     const [isMdBodyOpen, setIsMdBodyOpen] = useState<boolean>(false);
-    const [isHtmlBodyOpen, setIsHtmlBodyOpen] = useState<boolean>(false);
+    // const [isHtmlBodyOpen, setIsHtmlBodyOpen] = useState<boolean>(false);
     const [isMdUsageOpen, setIsMdUsageOpen] = useState<boolean>(false);
-    const [isHtmlUsageOpen, setIsHtmlUsageOpen] = useState<boolean>(false);
+    // const [isHtmlUsageOpen, setIsHtmlUsageOpen] = useState<boolean>(false);
     const [isMdSummaryOpen, setIsMdSummaryOpen] = useState<boolean>(false);
-    const [isImageEditorOpen, setIsImageEditorOpen] = useState<boolean>(false);
+    // const [isImageEditorOpen, setIsImageEditorOpen] = useState<boolean>(false);
     const [isIntroductionOpen, setIsIntroductionOpen] = useState<boolean>(false);
     const [isAfterEndOpen, setIsAfterEndOpen] = useState<boolean>(false);
     const [isOtherBooksOpen, setIsOtherBooksOpen] = useState<boolean>(false);
@@ -333,38 +333,38 @@ const EditBook = () => {
         }
     }
 
-    const toggleHtmlBodyEditor = async () => {
-        if (!isHtmlBodyOpen) {
-            try {
-                if (!editBookData.htmlBody && editBookData.htmlBody !== '') {
-                    setLoadingTxt(`${t('loading')}...`);
-                    if (!id) { throw new Error('not found id'); }
-                    const [_, res]: [void, AxiosResponse<BT.HtmlBodyType>] = await Promise.all([
-                        setTime(200),
-                        axios.get<BT.HtmlBodyType>(API_ENDPOINTS.getHtmlBody(id)),
-                    ]);
-                    const data = res.data;
-                    setEditBookData((prev) => ({
-                        ...prev,
-                        htmlBody: data.htmlBody
-                    }));
-                    setUnEditedData(prev => ({
-                        ...prev,
-                        htmlBody: data.htmlBody
-                    }));
-                }
-                setIsHtmlBodyOpen(true);
-            } catch (error) {
-                console.error(t('fetchFailed'), error);
-                setErrorMessage(t('fetchFailed'));
-            } finally {
-                setLoadingTxt('');
-            }
-        } else {
-            setIsHtmlBodyOpen(false);
-            setLoadingTxt('');
-        }
-    };
+    // const toggleHtmlBodyEditor = async () => {
+    //     if (!isHtmlBodyOpen) {
+    //         try {
+    //             if (!editBookData.htmlBody && editBookData.htmlBody !== '') {
+    //                 setLoadingTxt(`${t('loading')}...`);
+    //                 if (!id) { throw new Error('not found id'); }
+    //                 const [_, res]: [void, AxiosResponse<BT.HtmlBodyType>] = await Promise.all([
+    //                     setTime(200),
+    //                     axios.get<BT.HtmlBodyType>(API_ENDPOINTS.getHtmlBody(id)),
+    //                 ]);
+    //                 const data = res.data;
+    //                 setEditBookData((prev) => ({
+    //                     ...prev,
+    //                     htmlBody: data.htmlBody
+    //                 }));
+    //                 setUnEditedData(prev => ({
+    //                     ...prev,
+    //                     htmlBody: data.htmlBody
+    //                 }));
+    //             }
+    //             setIsHtmlBodyOpen(true);
+    //         } catch (error) {
+    //             console.error(t('fetchFailed'), error);
+    //             setErrorMessage(t('fetchFailed'));
+    //         } finally {
+    //             setLoadingTxt('');
+    //         }
+    //     } else {
+    //         setIsHtmlBodyOpen(false);
+    //         setLoadingTxt('');
+    //     }
+    // };
 
     const toggleMdUsageEditor = async () => {
         if (!isMdUsageOpen) {
@@ -399,38 +399,38 @@ const EditBook = () => {
         }
     }
 
-    const toggleHtmlUsageEditor = async () => {
-        if (!isHtmlUsageOpen) {
-            try {
-                if (!editBookData.htmlUsage && editBookData.htmlUsage !== '') {
-                    setLoadingTxt(`${t('loading')}...`);
-                    if (!id) { throw new Error('not found id'); }
-                    const [_, res]: [void, AxiosResponse<BT.HtmlUsageType>] = await Promise.all([
-                        setTime(200),
-                        axios.get<BT.HtmlUsageType>(API_ENDPOINTS.getHtmlUsage(id)),
-                    ]);
-                    const data = res.data;
-                    setEditBookData((prev) => ({
-                        ...prev,
-                        htmlUsage: data.htmlUsage
-                    }));
-                    setUnEditedData(prev => ({
-                        ...prev,
-                        htmlUsage: data.htmlUsage
-                    }));
-                }
-                setIsHtmlUsageOpen(true);
-            } catch (error) {
-                console.error(t('fetchFailed'), error);
-                setErrorMessage(t('fetchFailed'))
-            } finally {
-                setLoadingTxt('');
-            }
-        } else {
-            setIsHtmlUsageOpen(false);
-            setLoadingTxt('');
-        }
-    }
+    // const toggleHtmlUsageEditor = async () => {
+    //     if (!isHtmlUsageOpen) {
+    //         try {
+    //             if (!editBookData.htmlUsage && editBookData.htmlUsage !== '') {
+    //                 setLoadingTxt(`${t('loading')}...`);
+    //                 if (!id) { throw new Error('not found id'); }
+    //                 const [_, res]: [void, AxiosResponse<BT.HtmlUsageType>] = await Promise.all([
+    //                     setTime(200),
+    //                     axios.get<BT.HtmlUsageType>(API_ENDPOINTS.getHtmlUsage(id)),
+    //                 ]);
+    //                 const data = res.data;
+    //                 setEditBookData((prev) => ({
+    //                     ...prev,
+    //                     htmlUsage: data.htmlUsage
+    //                 }));
+    //                 setUnEditedData(prev => ({
+    //                     ...prev,
+    //                     htmlUsage: data.htmlUsage
+    //                 }));
+    //             }
+    //             setIsHtmlUsageOpen(true);
+    //         } catch (error) {
+    //             console.error(t('fetchFailed'), error);
+    //             setErrorMessage(t('fetchFailed'))
+    //         } finally {
+    //             setLoadingTxt('');
+    //         }
+    //     } else {
+    //         setIsHtmlUsageOpen(false);
+    //         setLoadingTxt('');
+    //     }
+    // }
 
     const toggleMdSummaryEditor = () => {
         if (!isMdSummaryOpen) {
@@ -440,13 +440,13 @@ const EditBook = () => {
         }
     }
 
-    const toggleImageEditor = () => {
-        if (!isImageEditorOpen) {
-            setIsImageEditorOpen(true);
-        } else {
-            setIsImageEditorOpen(false);
-        }
-    }
+    // const toggleImageEditor = () => {
+    //     if (!isImageEditorOpen) {
+    //         setIsImageEditorOpen(true);
+    //     } else {
+    //         setIsImageEditorOpen(false);
+    //     }
+    // }
 
     const toggleAfterEndEditor = () => {
         if (!isAfterEndOpen) {
@@ -1341,7 +1341,7 @@ const EditBook = () => {
                 />
             )}
 
-            {isImageEditorOpen && (
+            {/* {isImageEditorOpen && (
                 <ImageGallery
                     bookData={editBookData}
                     handleContentsChange={(contentType: keyof BT.BookDataType, newContent: string) => handleContentsChange(contentType, newContent)}
@@ -1350,7 +1350,7 @@ const EditBook = () => {
                     editorTitle={t('bookCover')}
                     onClose={toggleImageEditor}
                 />
-            )}
+            )} */}
         </div >
     );
 };

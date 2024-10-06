@@ -29,7 +29,7 @@ const SelectModal = ({
 }) => {
     const [selectedContent, setSelectedContent] = useState<BT.ContentOption[]>(contentOptions);
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    const { setSuccessMessage, setWarningMessage, setLoadingTxt, setErrorMessage, setImageModalSrc } = useGlobalState();
+    const { setSuccessMessage, setErrorMessage } = useGlobalState();
     const { t } = useTranslation();
 
     const handleContentChange = (id: string) => {

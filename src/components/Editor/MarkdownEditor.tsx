@@ -10,7 +10,7 @@ import { oneDark } from "@codemirror/theme-one-dark";
 import debounce from 'lodash/debounce';
 import { useTranslation } from 'react-i18next';
 
-import { useState, useEffect, useRef, useCallback, DragEvent, ChangeEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, DragEvent } from 'react';
 
 import { useGlobalState } from '../../context/GlobalStateProvider';
 import { API_ENDPOINTS, WS_ENDPOINTS } from "../../api/urls";

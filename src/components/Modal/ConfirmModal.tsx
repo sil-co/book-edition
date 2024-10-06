@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import { useState } from "react";
+// import { useState } from "react";
 
 const ConfirmModal = ({ message, onConfirm, onCancel }: {
     message: string,
@@ -35,45 +35,45 @@ const ConfirmModal = ({ message, onConfirm, onCancel }: {
 
 export default ConfirmModal
 
-const UsageExample = () => {
-    const [showModal, setShowModal] = useState(false);
+// const UsageExample = () => {
+//     const [showModal, setShowModal] = useState(false);
 
-    const handleDelete = () => {
-        setShowModal(true);
-    };
+//     const handleDelete = () => {
+//         setShowModal(true);
+//     };
 
-    const handleConfirm = () => {
-        setShowModal(false);
-        // 確認後の処理
-        alert("Confirmed!");
-    };
+//     const handleConfirm = () => {
+//         setShowModal(false);
+//         // 確認後の処理
+//         alert("Confirmed!");
+//     };
 
-    const handleCancel = () => {
-        setShowModal(false);
-        // キャンセル時の処理
-        alert("Cancelled!");
-    };
+//     const handleCancel = () => {
+//         setShowModal(false);
+//         // キャンセル時の処理
+//         alert("Cancelled!");
+//     };
 
-    return (
-        <div>
-            <div className="p-4">
-                <button
-                    className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-                    onClick={handleDelete}
-                >
-                    Delete
-                </button>
+//     return (
+//         <div>
+//             <div className="p-4">
+//                 <button
+//                     className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+//                     onClick={handleDelete}
+//                 >
+//                     Delete
+//                 </button>
 
-                {showModal && (
-                    <ConfirmModal
-                        message="Are you sure you want to delete this?"
-                        onConfirm={handleConfirm}
-                        onCancel={handleCancel}
-                    />
-                )}
-            </div>
-        </div>
-    );
-}
+//                 {showModal && (
+//                     <ConfirmModal
+//                         message="Are you sure you want to delete this?"
+//                         onConfirm={handleConfirm}
+//                         onCancel={handleCancel}
+//                     />
+//                 )}
+//             </div>
+//         </div>
+//     );
+// }
 
 
