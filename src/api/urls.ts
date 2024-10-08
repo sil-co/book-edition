@@ -1,7 +1,7 @@
-export const BASE_URL = "http://localhost:5000";
-export const BASE_WS = "ws://localhost:5000";
-export const BASE_IMAGE_URL = "http://localhost:5000";
-export const BASE_SAMPLE_URL = "http://localhost:5000/resources/sample/no_image.jpg";
+export const BASE_URL = import.meta.env.VITE_BASE_URL; // 定義されていない場合のフォールバック
+export const BASE_WS = import.meta.env.VITE_BASE_WS;
+export const BASE_IMAGE_URL = import.meta.env.VITE_BASE_IMAGE_URL;
+export const BASE_SAMPLE_URL = import.meta.env.VITE_BASE_SAMPLE_URL;
 
 export const API_ENDPOINTS = {
     postUserAuth: () => `${BASE_URL}/api/users/auth`,

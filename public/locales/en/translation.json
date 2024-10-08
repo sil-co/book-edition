@@ -75,6 +75,7 @@
   "stopGptConfirm": "If you stop, the next time GPT output will have to start from the beginning. \nIs this OK?",
   "resetCssConfirm": "Revert to default CSS (style)?",
   "extractConfirm": "Extract headers and code from body?",
+  "subscriptionConfirm": "Subscription registration is required to run GPT.\nDo you want to register for a subscription?",
   
   "requiredFailed": "The {{field}} field is required.",
   "fetchFailed": "Failed to fetch data",

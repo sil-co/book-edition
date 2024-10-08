@@ -2,11 +2,6 @@ import axios from "axios";
 import { API_ENDPOINTS } from "./urls";
 import { BookDataType, HtmlBodyType } from "../types/BookTypes";
 
-export const fetchBook = async (id: string): Promise<BookDataType> => {
-    const response = await axios.get<BookDataType>(API_ENDPOINTS.getBook(id));
-    return response.data;
-};
-
 export const updateBook = async (id: string, extractedData: Partial<BookDataType>): Promise<BookDataType> => {
     const response = await axios.put<BookDataType>(API_ENDPOINTS.updateBook(id), extractedData);
     return response.data;

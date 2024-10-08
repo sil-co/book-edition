@@ -75,6 +75,7 @@
     "stopGptConfirm": "Wenn Sie stoppen, muss die nächste GPT-Ausgabe von vorne beginnen.\nIst das in Ordnung?",
     "resetCssConfirm": "Zum Standard-CSS (Stil) zurückkehren?",
     "extractConfirm": "Kopfzeilen und Code aus dem Text extrahieren?",
+    "subscriptionConfirm": "Zum Ausführen von GPT ist eine Abonnementregistrierung erforderlich.\nMöchten Sie sich für ein Abonnement registrieren?",
     
     "requiredFailed": "Das Feld {{field}} ist erforderlich.",
     "fetchFailed": "Datenabruf fehlgeschlagen",

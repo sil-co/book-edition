@@ -167,6 +167,11 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }, [handleContentsChange]);
 
     const runGpt = async () => {
+        // if (!bookData.gptEnabled) {
+        //     const confirmMessage = t('subscriptionConfirm');
+        //     if (!window.confirm(confirmMessage)) { return; }
+        //     return
+        // }
         if (!gptButton) return setErrorMessage(t('gptCannotRun'));
         const confirmMessage = t('gptRunConfirm');
         if (!window.confirm(confirmMessage)) { return; }
@@ -608,7 +613,9 @@ ${htmlContent}
                         {gptButton && (
                             <button
                                 onClick={runGpt}
-                                className="bg-emerald-500 text-white px-3 py-1 rounded w-16"
+                                className={`text-white px-3 py-1 rounded w-16
+                                    ${bookData.gptEnabled ? 'bg-emerald-500 ' : 'bg-slate-500 cursor-auto'} 
+                                `}
                             >
                                 GPT
                             </button>

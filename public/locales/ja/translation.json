@@ -75,6 +75,7 @@
   "stopGptConfirm": "GPTを停止すると、次回は最初から出力を開始する必要があります。\nよろしいですか？",
   "resetCssConfirm": "デフォルトのCSS（スタイル）に戻しますか？",
   "extractConfirm": "本文からヘッダーとコードを抽出しますか？",
+  "subscriptionConfirm": "GPTを実行するには、サブスクリプション登録が必要です。\nサブスクリプションに登録しますか?",
 
   "requiredFailed": "{{field}}フィールドは必須です。",
   "fetchFailed": "データの取得に失敗しました",

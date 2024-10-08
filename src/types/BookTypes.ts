@@ -21,6 +21,7 @@ export interface BookDataType {
     gptProgress?: string;
     coverImageId?: string;
     defaultStyle?: string;
+    gptEnabled?: boolean;
     deleted?: boolean;
     publishedAt?: string;
 }

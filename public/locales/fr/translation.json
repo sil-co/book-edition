@@ -75,6 +75,7 @@
     "stopGptConfirm": "Si vous arrêtez, la prochaine sortie GPT devra commencer depuis le début. \nEst-ce que cela vous convient ?",
     "resetCssConfirm": "Réinitialiser au CSS par défaut (style) ?",
     "extractConfirm": "Extraire les en-têtes et le code du corps ?",
+    "subscriptionConfirm": "L'enregistrement d'un abonnement est nécessaire pour exécuter GPT. \nVoulez-vous vous inscrire à un abonnement ?",
     
     "requiredFailed": "Le champ {{field}} est requis.",
     "fetchFailed": "Échec de la récupération des données",

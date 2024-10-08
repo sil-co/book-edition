@@ -75,6 +75,7 @@
     "stopGptConfirm": "정지하면 다음 번 GPT 출력을 처음부터 시작해야 합니다.\n이대로 진행하시겠습니까?",
     "resetCssConfirm": "CSS(스타일)를 기본값으로 되돌리시겠습니까?",
     "extractConfirm": "본문에서 헤더와 코드를 추출하시겠습니까?",
+    "subscriptionConfirm": "GPT를 실행하려면 구독 등록이 필요합니다. \n구독을 등록하시겠습니까?",
     
     "requiredFailed": "{{field}} 필드는 필수입니다.",
     "fetchFailed": "데이터 가져오기 실패",

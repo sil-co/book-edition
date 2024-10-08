@@ -75,6 +75,7 @@
   "stopGptConfirm": "如果停止，下次GPT输出将从头开始。\n是否确定？",
   "resetCssConfirm": "恢复默认CSS（样式）？",
   "extractConfirm": "从正文中提取标题和代码？",
+  "subscriptionConfirm": "运行 GPT 需要订阅注册。\n您要注册订阅吗？",
 
   "requiredFailed": "{{field}} 字段为必填项。",
   "fetchFailed": "获取数据失败",

@@ -75,6 +75,7 @@
     "stopGptConfirm": "Jika Anda berhenti, keluaran GPT berikutnya harus dimulai dari awal. \nApakah ini OK?",
     "resetCssConfirm": "Kembalikan ke CSS (gaya) default?",
     "extractConfirm": "Ekstrak header dan kode dari isi?",
+    "subscriptionConfirm": "Pendaftaran langganan diperlukan untuk menjalankan GPT. \nApakah Anda ingin mendaftar langganan?",
     
     "requiredFailed": "Bidang {{field}} wajib diisi.",
     "fetchFailed": "Gagal mengambil data",

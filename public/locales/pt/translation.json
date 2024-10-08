@@ -75,6 +75,7 @@
     "stopGptConfirm": "Se você parar, a próxima saída do GPT terá que começar do início.\nEstá tudo bem?",
     "resetCssConfirm": "Reverter para o CSS padrão (estilo)?",
     "extractConfirm": "Extrair cabeçalhos e códigos do corpo?",
+    "subscriptionConfirm": "É necessário registrar uma assinatura para executar o GPT. \nDeseja se registrar para uma assinatura?",
     
     "requiredFailed": "O campo {{field}} é obrigatório.",
     "fetchFailed": "Falha ao buscar dados",
