@@ -20,6 +20,7 @@ const Register: React.FC = () => {
             const res = await axios.post(API_ENDPOINTS.postRegister(), { email, password, name });
             if (res.status >= 200) {
                 setSuccessMessage(t('registerSuccess'));
+                localStorage.removeItem('token');
                 navigate('/login');
             } else {
                 throw new Error(String(res.status));

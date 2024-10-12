@@ -1,6 +1,8 @@
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
 import { I18nextProvider, useTranslation } from 'react-i18next';
-import './i18n'; // i18nの設定をインポート
+import { i18n as I18nType } from 'i18next';
+
+import './i18n';
 
 import { useEffect, Suspense, lazy } from 'react';
 
@@ -70,21 +72,32 @@ const AppContent = () => {
     );
 };
 
-const App = () => {
-    const { i18n } = useTranslation();
+const Layout = ({ i18n }: { i18n: I18nType }) => {
+    const location = useLocation();
+    const showNavbar = location.pathname !== "/";  // "/"のパスではNavbarを非表示にする
 
     const changeLanguage = (lng: string) => {
         i18n.changeLanguage(lng); // 言語を切り替える
     };
 
     return (
+        <>
+            {showNavbar && <Navbar changeLanguage={changeLanguage} />}
+            <div>
+                <AppContent />
+            </div>
+        </>
+    );
+};
+
+const App = () => {
+    const { i18n }: { i18n: I18nType } = useTranslation();
+
+    return (
         <GlobalStateProvider>
             <I18nextProvider i18n={i18n}>
                 <Router>
-                    <Navbar changeLanguage={changeLanguage} />
-                    <div className="">
-                        <AppContent />
-                    </div>
+                    <Layout i18n={i18n} />
                 </Router>
             </I18nextProvider>
         </GlobalStateProvider>
