@@ -1,16 +1,6 @@
-import axios from 'axios';
-import { useTranslation } from 'react-i18next';
 import { FaStar } from "react-icons/fa";
 
-import { useState, useEffect } from 'react';
-
-import { API_ENDPOINTS } from '../../api/urls';
-import * as BT from '../../types/BookTypes';
-import { useGlobalState } from '../../context/GlobalStateProvider';
-
 const BookList = () => {
-    const { t } = useTranslation();
-
     return (
         <>
             <div className="min-h-screen">

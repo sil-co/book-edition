@@ -1,3 +1,4 @@
+import { UserType } from "./UserType";
 
 export interface BookDataType {
     id?: string;
@@ -21,7 +22,7 @@ export interface BookDataType {
     gptProgress?: string;
     coverImageId?: string;
     defaultStyle?: string;
-    gptEnabled?: boolean;
+    User?: UserType;
     deleted?: boolean;
     publishedAt?: string;
 }
