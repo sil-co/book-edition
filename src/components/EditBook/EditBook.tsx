@@ -306,9 +306,13 @@ const EditBook = () => {
                 if (!editBookData.mdBody && editBookData.mdBody !== '') {
                     setLoadingTxt(`${t('loading')}...`);
                     if (!id) { throw new Error('not found id'); }
+                    const token = localStorage.getItem('token');
                     const [_, res]: [void, AxiosResponse<BT.MdBodyType>] = await Promise.all([
                         setTime(200),
-                        axios.get<BT.MdBodyType>(API_ENDPOINTS.getMdBody(id)),
+                        axios.get<BT.MdBodyType>(
+                            API_ENDPOINTS.getMdBody(id),
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        ),
                     ]);
                     const data = res.data;
                     setEditBookData((prev) => ({
@@ -372,9 +376,13 @@ const EditBook = () => {
                 if (!editBookData.mdUsage && editBookData.mdUsage !== '') {
                     setLoadingTxt(`${t('loading')}...`);
                     if (!id) { throw new Error('not found id'); }
+                    const token = localStorage.getItem('token');
                     const [_, res]: [void, AxiosResponse<BT.MdUsageType>] = await Promise.all([
                         setTime(200),
-                        axios.get<BT.MdUsageType>(API_ENDPOINTS.getMdUsage(id)),
+                        axios.get<BT.MdUsageType>(
+                            API_ENDPOINTS.getMdUsage(id),
+                            { headers: { Authorization: `Bearer ${token}` }, }
+                        ),
                     ]);
                     const data = res.data;
                     setEditBookData((prev) => ({
