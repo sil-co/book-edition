@@ -54,7 +54,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     const [cssEditorVisible, setCssEditorVisible] = useState(false);
     const [isScrollSync, setScrollSync] = useState<boolean>(false);
     const [cssContent, setCssContent] = useState("");
-    const [isUpdateMarkdown, setIsUpdateMarkdown] = useState<boolean>(false);
+    // const [isUpdateMarkdown, setIsUpdateMarkdown] = useState<boolean>(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const editorRef = useRef(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -66,23 +66,23 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     }
 
     const debouncedHandleChangeCss = useCallback(
-        debounce((value) => handleChangeCss(value), 4000),
+        debounce((value) => handleChangeCss(value), 2000),
         [handleChangeCss]
     );
 
-    const debouncedHandleContentsChange = useCallback(
-        debounce(() => {
-            if (textareaRef.current) {
-                setIsUpdateMarkdown(true);
-                const newContent = textareaRef.current.value;
-                setPreviewContent(newContent);
-                const formattedContent = formatMarkdownText(newContent);
-                handleContentsChange(contentType, formattedContent);
-                setIsUpdateMarkdown(false);
-            }
-        }, 2000),
-        [handleContentsChange]
-    );
+    // const debouncedHandleContentsChange = useCallback(
+    //     debounce(() => {
+    //         if (textareaRef.current) {
+    //             setIsUpdateMarkdown(true);
+    //             const newContent = textareaRef.current.value;
+    //             setPreviewContent(newContent);
+    //             const formattedContent = formatMarkdownText(newContent);
+    //             handleContentsChange(contentType, formattedContent);
+    //             setIsUpdateMarkdown(false);
+    //         }
+    //     }, 2000),
+    //     [handleContentsChange]
+    // );
 
     const { setContainer } = useCodeMirror({
         container: editorRef.current,  // useCodeMirrorでエディタをDOMにセット
@@ -160,11 +160,19 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
         return text.replace(/\\n/g, '\n');
     }
 
-    const handleInputChange = useCallback(() => {
-        if (textareaRef.current) {
-            debouncedHandleContentsChange();
-        }
-    }, [handleContentsChange]);
+    // const handleInputChange = useCallback(() => {
+    //     if (textareaRef.current) {
+    //         debouncedHandleContentsChange();
+    //     }
+    // }, [handleContentsChange]);
+
+    const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const { value } = e.target;
+        const newContent = value;
+        setPreviewContent(newContent);
+        const formattedContent = formatMarkdownText(newContent);
+        handleContentsChange(contentType, formattedContent);
+    }
 
     const runGpt = async () => {
         if (!bookData.User?.gptEnabled) {
@@ -491,7 +499,7 @@ ${htmlContent}
 
     const handleDrop = async (e: DragEvent<HTMLTextAreaElement>) => {
         e.preventDefault();
-        setIsUpdateMarkdown(true);
+        // setIsUpdateMarkdown(true);
         const file = e.dataTransfer.files[0];
 
         // 画像ファイルかチェック
@@ -525,7 +533,7 @@ ${htmlContent}
                 console.error("Image upload failed", error);
                 setErrorMessage(t('uploadFailed'));
             } finally {
-                setIsUpdateMarkdown(false);
+                // setIsUpdateMarkdown(false);
             }
         }
     };
@@ -658,12 +666,13 @@ ${htmlContent}
                             ref={textareaRef}
                             name="markdown"
                             placeholder={`${placeHolderText ? placeHolderText : t('placeHolderMdContent')}`}
-                            onChange={handleInputChange}
-                            defaultValue={bookData[contentType]}
+                            onChange={handleContentChange}
+                            // defaultValue={bookData[contentType]}
+                            value={previewContent}
                             onDrop={handleDrop}
                             onDragOver={handleDragOver}
                             className="w-full h-[91%] p-2 border border-gray-300 rounded"
-                            disabled={isUpdateMarkdown}
+                            // disabled={isUpdateMarkdown}
                             onScroll={handleTextareaScroll}
                         ></textarea>
                         {cssEditorVisible && (
