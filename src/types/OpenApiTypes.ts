@@ -14,6 +14,7 @@ export type ReqBodyGpt = {
     contentType: BT.EditorContentType;
     reqMarkdown?: string;
     count?: number;
+    language: BT.language;
 }
 
 export interface ReqStopGpt {

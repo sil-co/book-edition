@@ -23,6 +23,7 @@ export const API_ENDPOINTS = {
     postEpub: () => `${BASE_URL}/api/book/epub`,
     postExtract: () => `${BASE_URL}/api/book/extract`,
     runGptOfToc: () => `${BASE_URL}/api/book/gpt/toc`,
+    runGptOfSummary: () => `${BASE_URL}/api/book/gpt/summary`,
     runGptOfIntroduction: () => `${BASE_URL}/api/book/gpt/introduction`,
     runGptOfAfterend: () => `${BASE_URL}/api/book/gpt/afterend`,
     runGptOfMdBody: () => `${BASE_URL}/api/book/gpt/mdbody`,
