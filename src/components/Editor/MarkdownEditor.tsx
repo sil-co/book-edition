@@ -54,7 +54,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
     const [cssEditorVisible, setCssEditorVisible] = useState(false);
     const [isScrollSync, setScrollSync] = useState<boolean>(false);
     const [cssContent, setCssContent] = useState("");
-    // const [isUpdateMarkdown, setIsUpdateMarkdown] = useState<boolean>(false);
+    const [isUpdateMarkdown, setIsUpdateMarkdown] = useState<boolean>(false);
     const [isSyncing, setIsSyncing] = useState(false);
     const editorRef = useRef(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -144,9 +144,9 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
 
     const getCss = async () => {
         try {
-            let res = await fetch('/default_md.css');
+            let res = await fetch('/css/markdown/default.css');
             const mdCss = await res.text();
-            res = await fetch('/hljs_1.css');
+            res = await fetch('/css/code/hljs_1.css');
             const hljsCss = await res.text();
             handleContentsChange('defaultStyle', mdCss + '\n' + hljsCss);
         } catch (error) {
@@ -499,7 +499,7 @@ ${htmlContent}
 
     const handleDrop = async (e: DragEvent<HTMLTextAreaElement>) => {
         e.preventDefault();
-        // setIsUpdateMarkdown(true);
+        setIsUpdateMarkdown(true);
         const file = e.dataTransfer.files[0];
 
         // 画像ファイルかチェック
@@ -521,8 +521,10 @@ ${htmlContent}
                     `![image](${imageUrl})` + '\n' +
                     previewContent.substring(endPos);
 
+                setPreviewContent(markdownWithImage);
+
                 // 更新
-                handleContentsChange(contentType, markdownWithImage)
+                handleContentsChange(contentType, markdownWithImage);
 
                 // カーソル位置を調整
                 setTimeout(() => {
@@ -533,7 +535,7 @@ ${htmlContent}
                 console.error("Image upload failed", error);
                 setErrorMessage(t('uploadFailed'));
             } finally {
-                // setIsUpdateMarkdown(false);
+                setIsUpdateMarkdown(false);
             }
         }
     };
@@ -672,7 +674,7 @@ ${htmlContent}
                             onDrop={handleDrop}
                             onDragOver={handleDragOver}
                             className="w-full h-[91%] p-2 border border-gray-300 rounded"
-                            // disabled={isUpdateMarkdown}
+                            disabled={isUpdateMarkdown}
                             onScroll={handleTextareaScroll}
                         ></textarea>
                         {cssEditorVisible && (
