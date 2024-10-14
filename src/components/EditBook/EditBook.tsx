@@ -25,6 +25,7 @@ const EditBook = () => {
         title: "",
         author: "",
         genre: "",
+        language: "en",
         isPublished: false,
     };
 
@@ -135,7 +136,7 @@ const EditBook = () => {
     }
 
     const requiredCheck = (): BT.RequiredFieldType | '' => {
-        const requiredFields: BT.RequiredFieldType[] = ['id', 'title', 'author', 'genre'];
+        const requiredFields: BT.RequiredFieldType[] = ['id', 'title', 'author', 'genre', 'language'];
 
         for (const field of requiredFields) {
             if (!editBookData[field]) { return field; }
@@ -682,6 +683,7 @@ const EditBook = () => {
                             value={editBookData.title}
                             className="w-full p-2 border border-gray-300 rounded"
                             disabled={isDisabled}
+                            required
                         />
                     </div>
                     <div>
@@ -696,6 +698,7 @@ const EditBook = () => {
                             value={editBookData.author || ''}
                             className="w-full p-2 border border-gray-300 rounded"
                             disabled={isDisabled}
+                            required
                         />
                     </div>
                     <div>
@@ -710,6 +713,7 @@ const EditBook = () => {
                             value={editBookData.genre || ''}
                             className="w-full p-2 border border-gray-300 rounded"
                             disabled={isDisabled}
+                            required
                         />
                     </div>
                     <div className="relative">
@@ -770,7 +774,7 @@ const EditBook = () => {
                                 {isDisabled ? (
                                     <FaSpinner className="animate-spin inline-block" />
                                 ) : (
-                                    'Open Markdown Editor'
+                                    t('openMDE')
                                 )}
                             </span>
                         </button>
@@ -1048,6 +1052,7 @@ const EditBook = () => {
                             value={editBookData.language || ''}
                             className="p-2 border border-gray-300 rounded w-48"
                             disabled={isDisabled}
+                            required
                         >
                             <option value="">Select Language</option>
                             <option value="en">English</option>

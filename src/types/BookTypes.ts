@@ -1,5 +1,7 @@
 import { UserType } from "./UserType";
 
+export type language = 'bn' | 'de' | 'en' | 'es' | 'fr' | 'hi' | 'id' | 'ja' | 'ko' | 'pt' | 'ru' | 'zh';
+
 export interface BookDataType {
     id?: string;
     title: string;
@@ -10,7 +12,7 @@ export interface BookDataType {
     mdBody?: string;
     htmlUsage?: string;
     mdUsage?: string;
-    language?: 'ja' | 'en';
+    language: language;
     summary?: string;
     introduction?: string;
     afterEnd?: string;
@@ -78,7 +80,7 @@ export interface HtmlUsageType {
 }
 
 
-export type RequiredFieldType = 'id' | 'title' | 'author' | 'genre' | 'toc' | 'htmlBody' | 'htmlUsage' | 'summary';
+export type RequiredFieldType = 'id' | 'title' | 'author' | 'genre' | 'toc' | 'htmlBody' | 'htmlUsage' | 'summary' | 'language';
 
 export interface ContentOption {
     id: string;

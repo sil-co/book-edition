@@ -22,6 +22,7 @@ const CreateBook = () => {
         title: "",
         author: "",
         genre: "",
+        language: "en",
         isPublished: false,
     };
 
@@ -52,7 +53,7 @@ const CreateBook = () => {
 
     // バリデーション
     const requiredCheck = (): BT.RequiredFieldType | '' => {
-        const requiredFields: BT.RequiredFieldType[] = ['title', 'author', 'genre'];
+        const requiredFields: BT.RequiredFieldType[] = ['title', 'author', 'genre', 'language'];
         for (const field of requiredFields) {
             if (!newBook[field]) { return field; }
         }
@@ -181,6 +182,7 @@ const CreateBook = () => {
                             onChange={handleInputChange}
                             value={newBook.title}
                             className="w-full p-2 border border-gray-300 rounded"
+                            required
                         />
                     </div>
                     <div>
@@ -194,6 +196,7 @@ const CreateBook = () => {
                             onChange={handleInputChange}
                             value={newBook.author || ''}
                             className="w-full p-2 border border-gray-300 rounded"
+                            required
                         />
                     </div>
                     <div>
@@ -207,6 +210,7 @@ const CreateBook = () => {
                             onChange={handleInputChange}
                             value={newBook.genre || ''}
                             className="w-full p-2 border border-gray-300 rounded"
+                            required
                         />
                     </div>
                     <div>
@@ -334,6 +338,7 @@ const CreateBook = () => {
                             onChange={handleInputChange}
                             value={newBook.language || ''}
                             className="w-full p-2 border border-gray-300 rounded"
+                            required
                         />
                     </div>
                     <div>

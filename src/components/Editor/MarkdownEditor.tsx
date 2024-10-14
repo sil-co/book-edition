@@ -192,6 +192,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         title: bookData.title,
                         model: 'gpt-4o',
                         contentType: contentType,
+                        language: bookData.language
                     }
                     const token = localStorage.getItem('token');
                     const res: AxiosResponse<string> = await axios.post<string>(
@@ -200,7 +201,8 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
                     const gptResult: string = res.data;
-                    const newContent: string = bookData[contentType] || '' + gptResult;
+                    const newContent: string = bookData[contentType] + '\n' + gptResult;
+                    console.log({newContent, bc: bookData[contentType]});
                     handleContentsChange(contentType, newContent);
                     setBookDataContent(newContent);
                     setSuccessMessage(t('gptSuccess'));
@@ -216,6 +218,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                             contentType: contentType,
                             reqMarkdown: bookData.toc,
                             count: 1,
+                            language: bookData.language
                         }
                         let gptResult = bookData[contentType] || '';
                         const token = localStorage.getItem('token');
@@ -272,7 +275,25 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                     return '';
                 }
                 case 'summary': {
-                    return '';
+                    const reqBodyGpt: OT.ReqBodyGpt = {
+                        id: String(bookData.id),
+                        title: bookData.title,
+                        model: 'gpt-4o',
+                        contentType: contentType,
+                        language: bookData.language
+                    }
+                    const token = localStorage.getItem('token');
+                    const res: AxiosResponse<string> = await axios.post<string>(
+                        API_ENDPOINTS.runGptOfSummary(),
+                        reqBodyGpt,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    const gptResult: string = res.data;
+                    const newContent: string = bookData[contentType] + '\n' + gptResult;
+                    handleContentsChange(contentType, newContent);
+                    setBookDataContent(newContent);
+                    setSuccessMessage(t('gptSuccess'));
+                    break;
                 }
                 case 'introduction': {
                     const reqBodyGpt: OT.ReqBodyGpt = {
@@ -280,6 +301,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         title: bookData.title,
                         model: 'gpt-4o',
                         contentType: contentType,
+                        language: bookData.language
                     }
                     const token = localStorage.getItem('token');
                     const res: AxiosResponse<string> = await axios.post<string>(
@@ -288,7 +310,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
                     const gptResult: string = res.data;
-                    const newContent: string = bookData[contentType] || '' + gptResult;
+                    const newContent: string = bookData[contentType] + '\n' + gptResult;
                     handleContentsChange(contentType, newContent);
                     setBookDataContent(newContent);
                     setSuccessMessage(t('gptSuccess'));
@@ -300,6 +322,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         title: bookData.title,
                         model: 'gpt-4o',
                         contentType: contentType,
+                        language: bookData.language
                     }
                     const token = localStorage.getItem('token');
                     const res: AxiosResponse<string> = await axios.post<string>(
@@ -308,7 +331,7 @@ const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
                         { headers: { Authorization: `Bearer ${token}` } }
                     );
                     const gptResult: string = res.data;
-                    const newContent: string = bookData[contentType] || '' + gptResult;
+                    const newContent: string = bookData[contentType] + '\n' + gptResult;
                     handleContentsChange(contentType, newContent);
                     setBookDataContent(newContent);
                     setSuccessMessage(t('gptSuccess'));
